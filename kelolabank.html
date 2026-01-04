@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kelola Pembayaran - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #685d58;
+      color: #f8f1e9;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR & SIDEBAR (Sama seperti Dashboard) ================== */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(10,5,3,0.95); backdrop-filter: blur(10px);
+      padding: 1rem 2rem; display: flex; justify-content: space-between;
+      align-items: center; z-index: 1000; border-bottom: 1px solid #251a12;
+    }
+    .logo-container { display: flex; align-items: center; gap: 1rem; }
+    .logo-img { width: 48px; height: 48px; object-fit: contain; border-radius: 50%; border: 2px solid #c17c4a; }
+    .business-name { font-size: 1.5rem; font-weight: 700; color: #e6b989; }
+
+    .sidebar {
+      position: fixed; top: 0; left: -300px; width: 280px; height: 100%;
+      background: #1a120c; border-right: 1px solid #3a2a1f;
+      transition: left 0.4s ease; z-index: 999; overflow-y: auto; padding-top: 80px;
+    }
+    .sidebar.active { left: 0; }
+    .sidebar-header { padding: 1.5rem; border-bottom: 1px solid #3a2a1f; color: #e6b989; font-size: 1.4rem; font-weight: 700; }
+    .sidebar-menu { list-style: none; padding: 1rem 0; }
+    .sidebar-menu li a { display: flex; align-items: center; padding: 1.1rem 1.8rem; color: #c9b29a; text-decoration: none; font-size: 1.05rem; transition: all 0.2s; }
+    .sidebar-menu li a:hover, .sidebar-menu li a.active { background: #f98431; color: #000000; }
+    .sidebar-menu li a i { margin-right: 12px; width: 24px; text-align: center; }
+    
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      opacity: 0; visibility: hidden; transition: all 0.4s; z-index: 998;
+    }
+    .overlay.active { opacity: 1; visibility: visible; }
+
+    /* Dropdown Sidebar */
+    .sidebar-menu .dropdown-menu {
+      list-style: none;
+      padding: 0;
+      background: #0f0800;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+    .sidebar-menu .dropdown-toggle {
+      justify-content: space-between;
+    }
+    .sidebar-menu .dropdown-toggle .fa-chevron-down {
+      transition: transform 0.3s;
+    }
+    .sidebar-menu .dropdown.active .dropdown-toggle .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+
+    /* ================== MAIN CONTENT ================== */
+    .main-content {
+      padding: 100px 2rem 4rem; max-width: 1200px; margin: 0 auto;
+      transition: margin-left 0.4s ease;
+    }
+    .main-content.shifted { margin-left: 280px; }
+    @media (max-width: 992px) { .main-content.shifted { margin-left: 0; } }
+
+    h1 { color: #e6b989; margin-bottom: 2rem; font-size: 2rem; }
+
+    /* Form Container */
+    .form-container {
+      background: #000000; border-radius: 16px; padding: 2rem;
+      border: 1px solid #3a2a1f; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      margin-bottom: 2.5rem;
+    }
+    .form-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem; margin-bottom: 2rem;
+    }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #c9b29a; font-weight: 500; }
+    .form-group input {
+      width: 100%; padding: 0.9rem; border-radius: 8px; border: 1px solid #3a2a1f;
+      background: #251a12; color: #f8f1e9; font-size: 1rem;
+    }
+    .form-group input:focus { outline: none; border-color: #c17c4a; box-shadow: 0 0 0 2px rgba(193,124,74,0.2); }
+
+    .btn-container { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 1rem; 
+    }
+    .btn {
+      padding: 0.8rem 1.5rem; border: none; border-radius: 8px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 1rem;
+      width: 100%;
+    }
+    .btn-primary { background: #c17c4a; color: white; }
+    .btn-primary:hover { background: #d18f5e; }
+    .btn-warning { background: #e6b989; color: #1a120c; }
+    .btn-warning:hover { background: #ffca99; }
+    .btn-danger { background: #ff6b6b; color: white; }
+    .btn-danger:hover { background: #ff5252; }
+    .btn-secondary { background: #3a2a1f; color: #c9b29a; }
+    .btn-secondary:hover { background: #4a3a2f; }
+    
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+    /* Table */
+    .table-responsive {
+      background: #1a120c; border-radius: 12px; overflow-x: auto;
+      border: 1px solid #3a2a1f; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #3a2a1f; }
+    th { background: #251a12; color: #e6b989; font-weight: 600; }
+    tr { transition: background 0.2s; }
+    tr:hover { background: rgba(193, 124, 74, 0.05); cursor: pointer; }
+    tr.selected { background: rgba(193, 124, 74, 0.15); border-left: 4px solid #c17c4a; }
+    td { color: #f8f1e9; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">Menu</div>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+      <li><a href="profil.html"><i class="fas fa-user"></i> Profil</a></li>
+      <li><a href="menu.html"><i class="fas fa-coffee"></i> Menu & Harga</a></li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle">
+          <div style="display:flex; align-items:center;"><i class="fas fa-calendar-alt"></i> Kelola Jadwal</div>
+          <i class="fas fa-chevron-down" style="margin-right: 0; font-size: 0.8rem;"></i>
+        </a>
+        <ul class="dropdown-menu">
+          <li><a href="#" style="padding-left: 3rem;"><i class="fas fa-clock"></i> Jam Operasional</a></li>
+          <li><a href="#" style="padding-left: 3rem;"><i class="fas fa-calendar-day"></i> Hari Operasional</a></li>
+        </ul>
+      </li>
+      <li><a href="#"><i class="fas fa-arrow-up"></i> Pemasukan</a></li>
+      <li><a href="#"><i class="fas fa-arrow-down"></i> Pengeluaran</a></li>
+      <li><a href="#"><i class="fas fa-balance-scale"></i> Neraca</a></li>
+      <li><a href="kelolabank.html" class="active"><i class="fas fa-building-columns"></i> Rekening Pembayaran</a></li>
+      <li><a href="#"><i class="fas fa-receipt"></i> Transaksi Hari Ini</a></li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <ul class="sidebar-menu" style="margin-top: 3rem; border-top: 1px solid #3a2a1f; padding-top: 1.5rem;">
+        <li>
+          <a href="index.html" style="color: #c17c4a;">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    <h1>Daftar Pembayaran Digital</h1>
+    
+    <!-- Container Input Data -->
+    <div class="form-container">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="bankName">Nama Bank / Uang Digital</label>
+          <input type="text" id="bankName" placeholder="Contoh: BCA, OVO, DANA" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="accountNumber">Nomor Rekening / Referensi</label>
+          <input type="text" id="accountNumber" placeholder="Contoh: 1234567890" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="accountOwner">Nama Pemilik Akun</label>
+          <input type="text" id="accountOwner" placeholder="Contoh: Nerai Coffee" autocomplete="off">
+        </div>
+      </div>
+      
+      <div class="btn-container">
+        <button class="btn btn-primary" id="btnAdd"><i class="fas fa-plus"></i> Tambah Pembayaran</button>
+        <button class="btn btn-warning" id="btnUpdate" disabled><i class="fas fa-edit"></i> Update</button>
+        <button class="btn btn-danger" id="btnDelete" disabled><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-secondary" id="btnCancel"><i class="fas fa-times"></i> Cancel</button>
+        <button class="btn btn-secondary" id="btnBack" onclick="window.location.href='dashboard.html'"><i class="fas fa-arrow-left"></i> Kembali Ke Dashboard</button>
+      </div>
+    </div>
+
+    <!-- Tabel Data -->
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th width="60" style="text-align:center;">No</th>
+            <th>Nama Bank/Platform</th>
+            <th>Nomor Rekening</th>
+            <th>Atas Nama</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="4" style="text-align:center; padding:2rem; color:#c9b29a;">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // === SIDEBAR LOGIC ===
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const mainContent = document.getElementById('mainContent');
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+      mainContent.classList.toggle('shifted');
+    }
+
+    overlay.addEventListener('click', toggleSidebar);
+
+    // Dropdown Sidebar Logic
+    document.querySelectorAll('.sidebar-menu .dropdown .dropdown-toggle').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const parent = this.parentElement;
+        const submenu = parent.querySelector('.dropdown-menu');
+        parent.classList.toggle('active');
+        if (parent.classList.contains('active')) {
+          submenu.style.maxHeight = submenu.scrollHeight + "px";
+        } else {
+          submenu.style.maxHeight = null;
+        }
+      });
+    });
+
+    // === SUPABASE LOGIC ===
+    const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const TABLE_NAME = 'tabelrekening';
+    const TABLE_PROFIL = 'tabelprofil';
+    const BUCKET_NAME = 'aset';
+
+    // Load Info Usaha (Logo & Nama)
+    async function loadBusinessInfo() {
+      try {
+        const { data, error } = await supabaseClient.from(TABLE_PROFIL).select('nama_usaha, logo').limit(1).single();
+        
+        if (error && error.code !== 'PGRST116') throw error;
+
+        if (data) {
+          if(data.nama_usaha) document.getElementById('navbarBusinessName').textContent = data.nama_usaha.toUpperCase();
+          if(data.logo) {
+            const { data: publicData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(data.logo);
+            document.getElementById('navbarLogo').src = publicData.publicUrl;
+          }
+        }
+      } catch (err) { console.error('Error loading info:', err); }
+    }
+    loadBusinessInfo();
+
+    // CRUD Logic
+    const bankNameInput = document.getElementById('bankName');
+    const accNumInput = document.getElementById('accountNumber');
+    const ownerInput = document.getElementById('accountOwner');
+    const tableBody = document.getElementById('tableBody');
+    
+    const btnAdd = document.getElementById('btnAdd');
+    const btnUpdate = document.getElementById('btnUpdate');
+    const btnDelete = document.getElementById('btnDelete');
+    const btnCancel = document.getElementById('btnCancel');
+
+    let selectedId = null;
+
+    async function loadData() {
+      try {
+        const { data, error } = await supabaseClient.from(TABLE_NAME).select('*').order('created_at', { ascending: true });
+        if (error) throw error;
+        renderTable(data || []);
+      } catch (err) {
+        console.error('Gagal memuat data:', err);
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2rem; color:#ff6b6b;">Gagal memuat data. Pastikan tabel '${TABLE_NAME}' ada.</td></tr>`;
+      }
+    }
+
+    function renderTable(data) {
+      tableBody.innerHTML = '';
+      if (data.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2rem; color:#c9b29a;">Belum ada data pembayaran.</td></tr>`;
+        return;
+      }
+
+      data.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center;">${index + 1}</td>
+          <td>${item.nama_bank}</td>
+          <td>${item.nomor_rekening}</td>
+          <td>${item.pemilik}</td>
+        `;
+        tr.onclick = () => selectRow(item, tr);
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function selectRow(item, trElement) {
+      // Highlight row
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+      trElement.classList.add('selected');
+
+      // Populate form
+      selectedId = item.id;
+      bankNameInput.value = item.nama_bank;
+      accNumInput.value = item.nomor_rekening;
+      ownerInput.value = item.pemilik;
+
+      // Update buttons
+      btnAdd.disabled = true;
+      btnUpdate.disabled = false;
+      btnDelete.disabled = false;
+    }
+
+    function clearForm() {
+      selectedId = null;
+      bankNameInput.value = '';
+      accNumInput.value = '';
+      ownerInput.value = '';
+      
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+      btnAdd.disabled = false;
+      btnUpdate.disabled = true;
+      btnDelete.disabled = true;
+    }
+
+    // Event Listeners
+
+    btnAdd.onclick = async () => {
+      const payload = {
+        nama_bank: bankNameInput.value.trim(),
+        nomor_rekening: accNumInput.value.trim(),
+        pemilik: ownerInput.value.trim()
+      };
+      if (!payload.nama_bank || !payload.nomor_rekening) return alert('Nama Bank dan Nomor Rekening wajib diisi!');
+
+      const { error } = await supabaseClient.from(TABLE_NAME).insert([payload]);
+      if (error) alert('Gagal menambah: ' + error.message);
+      else { clearForm(); loadData(); }
+    };
+
+    btnUpdate.onclick = async () => {
+      if (!selectedId) return;
+      const payload = {
+        nama_bank: bankNameInput.value.trim(),
+        nomor_rekening: accNumInput.value.trim(),
+        pemilik: ownerInput.value.trim()
+      };
+      const { error } = await supabaseClient.from(TABLE_NAME).update(payload).eq('id', selectedId);
+      if (error) alert('Gagal update: ' + error.message);
+      else { clearForm(); loadData(); }
+    };
+
+    btnDelete.onclick = async () => {
+      if (!selectedId) return;
+      if (!confirm('Yakin ingin menghapus data ini?')) return;
+      
+      const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('id', selectedId);
+      if (error) alert('Gagal hapus: ' + error.message);
+      else { clearForm(); loadData(); }
+    };
+
+    btnCancel.onclick = clearForm;
+
+    // Init
+    loadData();
+  </script>
+</body>
+</html>

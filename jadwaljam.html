@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Jam Operasional</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+            --text-muted: #b0b0b0;
+            --accent: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --border: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            color: #ffffff;
+        }
+        h1 i {
+            color: var(--accent);
+        }
+        .add-section {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #2d2d2d;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            flex: 1;
+            min-width: 220px;
+        }
+        .input-group i {
+            color: var(--text-muted);
+            font-size: 1.2em;
+        }
+        .input-group input[type="date"],
+        .input-group input[type="time"] {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1em;
+            width: 100%;
+            outline: none;
+        }
+        .input-group input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--danger);
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #add-btn {
+            background: var(--accent);
+            color: white;
+        }
+        #add-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .bottom-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        #save-btn {
+            background: var(--success);
+            color: white;
+            flex: 1;
+            padding: 15px;
+            font-size: 1.1em;
+        }
+        #save-btn:hover {
+            background: #219a52;
+            transform: translateY(-2px);
+        }
+        #back-btn {
+            background: #34495e;
+            color: white;
+            flex: 1;
+            padding: 15px;
+            font-size: 1.1em;
+        }
+        #back-btn:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        th {
+            background: #2d2d2d;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        .time-inputs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .time-inputs input[type="time"] {
+            background: #2d2d2d;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85em;
+            display: inline-block;
+        }
+        .status-badge.open {
+            background: rgba(39, 174, 96, 0.2);
+            color: var(--success);
+        }
+        .status-badge.closed {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+        }
+        .remove-btn {
+            background: var(--danger);
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+
+        #notification {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.5);
+            font-size: 1.2em;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            animation: slideDown 0.5s ease;
+        }
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-clock"></i> Pengaturan Jam Operasional</h1>
+
+        <div class="add-section">
+            <div class="input-group">
+                <i class="fas fa-calendar-alt"></i>
+                <input type="date" id="new-date">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="new-open" value="16:00">
+            </div>
+            <span style="color:var(--text-muted); font-weight:600;">s/d</span>
+            <div class="input-group">
+                <i class="fas fa-clock"></i>
+                <input type="time" id="new-close" value="00:00">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="new-holiday">
+                <label for="new-holiday">Hari Libur</label>
+            </div>
+            <button type="button" id="add-btn">
+                <i class="fas fa-plus"></i> Tambah
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table id="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Jam Operasional</th>
+                        <th>Status</th>
+                        <th style="width: 100px; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body">
+                    <!-- Rows akan ditambahkan oleh JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bottom-buttons">
+            <button type="button" id="save-btn">
+                <i class="fas fa-save"></i> Simpan Semua Pengaturan
+            </button>
+            <button type="button" id="back-btn" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+            </button>
+        </div>
+    </div>
+
+    <div id="notification">
+        <i class="fas fa-exclamation-triangle"></i> Hari ini libur! Kami tidak beroperasi.
+    </div>
+
+    <script>
+        const scheduleBody = document.getElementById('schedule-body');
+        const addBtn = document.getElementById('add-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const notification = document.getElementById('notification');
+        const newDateInput = document.getElementById('new-date');
+
+        // Inisialisasi Supabase
+        const supabaseUrl = 'https://jmeoqpofvxthckjoauii.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Fungsi untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD
+        function getTodayISOString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Set date picker ke hari ini saat halaman dimuat
+        window.addEventListener('load', () => {
+            newDateInput.value = getTodayISOString();
+            loadSettings();
+        });
+
+        // Format tanggal Indonesia lengkap
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        async function loadSettings() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tabeljadwal')
+                    .select('*')
+                    .order('tanggal', { ascending: true });
+
+                if (error) throw error;
+
+                scheduleBody.innerHTML = '';
+                let settings = [];
+
+                if (data && data.length > 0) {
+                    settings = data.map(item => ({
+                        date: item.tanggal,
+                        // Pastikan format jam HH:mm (hapus detik jika ada) agar terbaca input type="time"
+                        open: item.buka ? item.buka.substring(0, 5) : '00:00',
+                        close: item.tutup ? item.tutup.substring(0, 5) : '00:00',
+                        holiday: item.status === 'Libur'
+                    }));
+                }
+
+                settings.forEach((item) => {
+                    addRow(item.date, item.open, item.close, item.holiday);
+                });
+
+                checkTodayStatus(settings);
+            } catch (err) {
+                console.error('Gagal memuat data:', err);
+                alert('Gagal memuat jadwal dari database.');
+            }
+        }
+
+        function addRow(date, open, close, holiday) {
+            const tr = document.createElement('tr');
+            tr.dataset.date = date; // Simpan tanggal asli di atribut data
+            tr.innerHTML = `
+                <td>${formatDate(date)}</td>
+                <td>
+                    ${holiday ? 
+                        '<span style="color:var(--text-muted); font-style:italic;">-</span>' : 
+                        `<div class="time-inputs">
+                            <input type="time" value="${open}">
+                            <span>—</span>
+                            <input type="time" value="${close}">
+                        </div>`
+                    }
+                </td>
+                <td>
+                    <span class="status-badge ${holiday ? 'closed' : 'open'}">${holiday ? 'Libur' : 'Buka'}</span>
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="remove-btn"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            scheduleBody.appendChild(tr);
+        }
+
+        addBtn.addEventListener('click', () => {
+            const dateInput = newDateInput.value;
+            if (!dateInput) {
+                alert('Pilih tanggal terlebih dahulu!');
+                return;
+            }
+
+            const existing = Array.from(scheduleBody.children).some(row => 
+                row.cells[0].textContent === formatDate(dateInput)
+            );
+            if (existing) {
+                alert('Tanggal tersebut sudah ada!');
+                return;
+            }
+
+            const open = document.getElementById('new-open').value || '16:00';
+            const close = document.getElementById('new-close').value || '00:00';
+            const holiday = document.getElementById('new-holiday').checked;
+
+            addRow(dateInput, open, close, holiday);
+
+            // Reset form, tapi date picker kembali ke hari ini
+            newDateInput.value = getTodayISOString();
+            document.getElementById('new-holiday').checked = false;
+        });
+
+        scheduleBody.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-btn')) {
+                e.target.closest('tr').remove();
+            }
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            const uiData = [];
+            const uiDates = [];
+
+            scheduleBody.querySelectorAll('tr').forEach(row => {
+                const date = row.dataset.date;
+                const isHoliday = row.querySelector('.status-badge').classList.contains('closed');
+                let open = '00:00', close = '00:00';
+                
+                if (!isHoliday) {
+                    const inputs = row.querySelectorAll('input[type="time"]');
+                    open = inputs[0].value;
+                    close = inputs[1].value;
+                }
+
+                uiDates.push(date);
+                uiData.push({
+                    tanggal: date,
+                    buka: open,
+                    tutup: close,
+                    status: isHoliday ? 'Libur' : 'Buka'
+                });
+            });
+
+            try {
+                // 1. Ambil data eksisting untuk menentukan apa yang harus dihapus
+                const { data: dbData } = await supabaseClient.from('tabeljadwal').select('tanggal');
+                const dbDates = dbData ? dbData.map(d => d.tanggal) : [];
+
+                // 2. Hapus data lama (baik yang dihapus user maupun yang akan di-update)
+                // Ini menghindari error "no unique constraint" dan duplikasi data
+                const datesToDelete = [...new Set([...dbDates, ...uiDates])];
+
+                if (datesToDelete.length > 0) {
+                    const { error: deleteError } = await supabaseClient.from('tabeljadwal').delete().in('tanggal', datesToDelete);
+                    if (deleteError) throw deleteError;
+                }
+
+                // 3. Insert data baru
+                if (uiData.length > 0) {
+                    const { error: insertError } = await supabaseClient.from('tabeljadwal').insert(uiData);
+                    if (insertError) throw insertError;
+                }
+
+                alert('Pengaturan berhasil disimpan ke database!');
+            } catch (err) {
+                console.error('Error saving:', err);
+                alert('Gagal menyimpan pengaturan: ' + err.message);
+            }
+        });
+
+        function checkTodayStatus(settings) {
+            const today = getTodayISOString();
+            const todaySetting = settings.find(s => s.date === today);
+            if (todaySetting && todaySetting.holiday) {
+                notification.style.display = 'block';
+                setTimeout(() => notification.style.display = 'none', 8000);
+            }
+        }
+    </script>
+</body>
+</html>

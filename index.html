@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Nerai Coffee - Menu</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tambahkan Font Awesome untuk icon (login/user) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #0a0503;
+      color: #f8f1e9;
+      padding: 1rem;
+      padding-bottom: 160px;
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(10,5,3,0.92);
+      backdrop-filter: blur(10px);
+      padding: 1.2rem 1.5rem;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .header-left {
+      text-align: center;
+      flex: 1;
+    }
+
+    .logo {
+      font-size: 3.2rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #e6b989;
+    }
+
+    .header-logo-img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+      margin-bottom: 0.5rem;
+      display: none; /* Ditampilkan via JS jika ada logo */
+    }
+
+    .tagline {
+      font-size: 1.15rem;
+      color: #c9b29a;
+      margin-top: 0.4rem;
+    }
+
+    .status-message {
+      font-size: 0.95rem;
+      margin-top: 0.4rem;
+      font-weight: 500;
+    }
+
+    .login-icon {
+      font-size: 1.8rem;
+      color: #e6b989;
+      cursor: pointer;
+      transition: transform 0.2s, color 0.2s;
+    }
+
+    .login-icon:hover {
+      color: #d18f5e;
+      transform: scale(1.15);
+    }
+
+    /* === MODAL LOGIN === */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+      background: #1a120c;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 420px;
+      padding: 2rem;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid #6d503d;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      font-size: 1.8rem;
+      color: #c9b29a;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: #e6b989;
+    }
+
+    .modal h2 {
+      text-align: center;
+      color: #e6b989;
+      margin-bottom: 1.8rem;
+      font-size: 1.8rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.4rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #c9b29a;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      background: #251a12;
+      color: #f8f1e9;
+      font-size: 1rem;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #c17c4a;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 1.1rem;
+      background: linear-gradient(135deg, #c17c4a, #d18f5e);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: all 0.2s;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-footer {
+      text-align: center;
+      margin-top: 1.2rem;
+      color: #c9b29a;
+      font-size: 0.95rem;
+    }
+
+    .modal-footer a {
+      color: #e6b989;
+      text-decoration: none;
+    }
+
+    .modal-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* --- Style accordion & lainnya tetap sama --- */
+    .accordion-container {
+      background: #1a120c;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      margin-bottom: 2rem;
+    }
+
+    .accordion-header {
+      padding: 1.3rem 1.5rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to right, #251a12, #1a120c);
+      transition: background 0.2s;
+    }
+
+    .accordion-header:hover {
+      background: linear-gradient(to right, #2f2219, #1a120c);
+    }
+
+    .accordion-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #e6b989;
+    }
+
+    .accordion-toggle {
+      font-size: 2rem;
+      color: #c9b29a;
+      transition: transform 0.3s;
+    }
+
+    .accordion-toggle.active {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      max-height: 50vh;
+      overflow-y: auto;
+      transition: max-height 0.5s ease;
+      scrollbar-width: thin;
+      scrollbar-color: #c17c4a #251a12;
+    }
+
+    .accordion-content.active {
+      max-height: 60vh;
+    }
+
+    .accordion-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .accordion-content::-webkit-scrollbar-track {
+      background: #251a12;
+    }
+
+    .accordion-content::-webkit-scrollbar-thumb {
+      background: #c17c4a;
+      border-radius: 4px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.1rem;
+      padding: 1.5rem;
+    }
+
+    .menu-item {
+      background: #251a12;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .menu-img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+    }
+
+    .menu-info {
+      padding: 0.8rem;
+      text-align: center;
+    }
+
+    .menu-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      line-height: 1.3;
+    }
+
+    .menu-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #e6b989;
+    }
+
+    .fixed-bottom {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 400px;
+      z-index: 100;
+      text-align: center;
+    }
+
+    .btn-order {
+      background: linear-gradient(135deg, #c17c4a, #d18f5e);
+      color: white;
+      border: none;
+      width: 100%;
+      padding: 1.3rem;
+      border-radius: 50px;
+      font-size: 1.35rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(193,124,74,0.5);
+      transition: all 0.2s;
+      text-decoration: none;
+      display: block;
+    }
+
+    .btn-order:active {
+      transform: translateY(3px);
+      box-shadow: 0 5px 15px rgba(193,124,74,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <img src="" alt="Logo" class="header-logo-img" id="headerLogo">
+      <div class="logo" id="headerBusinessName">NERAI</div>
+      <div class="tagline" id="dateTimeDisplay"></div>
+      <div class="status-message" id="operationalStatus"></div>
+    </div>
+    <i class="fas fa-user-circle login-icon" id="loginBtn"></i>
+  </header>
+
+  <!-- Modal Login -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <span class="modal-close" id="closeModal">&times;</span>
+      
+      <h2>Login ke Nerai</h2>
+      
+      <form>
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Username" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-login">MASUK</button>
+      </form>
+
+
+    </div>
+  </div>
+
+  <!-- Modal Notifikasi Toko Tutup -->
+  <div class="modal" id="closedModal">
+    <div class="modal-content" style="text-align: center; max-width: 380px;">
+      <span class="modal-close" id="closeClosedModal">&times;</span>
+      <div style="margin-bottom: 1.5rem; margin-top: 1rem;">
+        <i class="fas fa-store-slash" style="font-size: 4rem; color: #ff6b6b; text-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);"></i>
+      </div>
+      <h2 style="font-size: 1.6rem; margin-bottom: 1rem; color: #f8f1e9;">Mohon Maaf</h2>
+      <p id="closedMessage" style="color: #c9b29a; font-size: 1.05rem; line-height: 1.6; margin-bottom: 2rem;">
+        <!-- Pesan via JS -->
+      </p>
+      <button id="btnClosedOk" class="btn-login" style="margin-top: 0; background: #3a2a1f; border: 1px solid #5c4030;">KEMBALI</button>
+    </div>
+  </div>
+
+  <div class="accordion-container">
+    <div class="accordion-header">
+      <span class="accordion-title">Lihat Semua Menu</span>
+      <span class="accordion-toggle">+</span>
+    </div>
+
+    <div class="accordion-content">
+      <div class="menu-grid" id="menuGrid">
+        <!-- Data akan dimuat dari Supabase -->
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bottom">
+    <a href="pesanan.html" class="btn-order" id="btnOrderNow">PESAN SEKARANG</a>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // === MODAL LOGIN LOGIC ===
+      const loginBtn = document.getElementById('loginBtn');
+      const modal = document.getElementById('loginModal');
+      const closeModal = document.getElementById('closeModal');
+
+      if (loginBtn && modal) {
+        loginBtn.addEventListener('click', () => {
+          modal.style.display = 'flex';
+        });
+      }
+
+      if (closeModal && modal) {
+        closeModal.addEventListener('click', () => {
+          modal.style.display = 'none';
+        });
+      }
+
+      if (modal) {
+        window.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      }
+
+      // === ACCORDION LOGIC ===
+      const header = document.querySelector('.accordion-header');
+      const content = document.querySelector('.accordion-content');
+      const toggle = document.querySelector('.accordion-toggle');
+
+      if (header && content && toggle) {
+        header.addEventListener('click', () => {
+          content.classList.toggle('active');
+          toggle.classList.toggle('active');
+          toggle.textContent = toggle.classList.contains('active') ? '−' : '+';
+        });
+      }
+
+      // === LOGIC LOGIN SUPABASE ===
+      const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // === LOAD BUSINESS INFO (LOGO & NAMA) ===
+      async function loadBusinessInfo() {
+        const headerLogo = document.getElementById('headerLogo');
+        const headerBusinessName = document.getElementById('headerBusinessName');
+
+        try {
+          const { data, error } = await supabase
+            .from('tabelprofil')
+            .select('nama_usaha, logo')
+            .limit(1)
+            .single();
+
+          if (data) {
+            if (data.nama_usaha) headerBusinessName.textContent = data.nama_usaha.toUpperCase();
+            if (data.logo) {
+              const { data: publicData } = supabase.storage.from('aset').getPublicUrl(data.logo);
+              headerLogo.src = publicData.publicUrl;
+              headerLogo.style.display = 'inline-block';
+            }
+          }
+        } catch (err) { console.error('Error loading business info:', err); }
+      }
+      loadBusinessInfo();
+
+      // === JAM & TANGGAL BERJALAN ===
+      function updateDateTime() {
+        const now = new Date();
+        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        const dateStr = now.toLocaleDateString('id-ID', options);
+        const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+        document.getElementById('dateTimeDisplay').textContent = `${dateStr} | ${timeStr} WIB`;
+      }
+      setInterval(updateDateTime, 1000);
+      updateDateTime();
+
+      // === CEK STATUS OPERASIONAL HARI INI ===
+      async function checkOperationalStatus() {
+        const statusDisplay = document.getElementById('operationalStatus');
+        if (!statusDisplay) return;
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayISO = `${year}-${month}-${day}`;
+
+        try {
+          const { data, error } = await supabase
+            .from('tabeljadwal')
+            .select('buka, tutup, status')
+            .eq('tanggal', todayISO)
+            .maybeSingle();
+
+          if (data) {
+            if (data.status === 'Libur') {
+              statusDisplay.textContent = "Sorry, we're Closed today";
+              statusDisplay.style.color = '#ff6b6b';
+            } else {
+              const openTime = data.buka ? data.buka.substring(0, 5) : '00:00';
+              const closeTime = data.tutup ? data.tutup.substring(0, 5) : '00:00';
+              statusDisplay.textContent = `We're Open today from ${openTime} until ${closeTime}`;
+              statusDisplay.style.color = '#27ae60';
+            }
+          } else {
+            // Jika tidak ada data jadwal, default dianggap Buka (16:00 - 00:00)
+            statusDisplay.textContent = "We're Open today from 16:00 until 00:00";
+            statusDisplay.style.color = '#27ae60';
+          }
+        } catch (err) {
+          console.error('Error checking status:', err);
+        }
+      }
+      checkOperationalStatus();
+
+      // === LOAD MENU DARI SUPABASE ===
+      async function loadMenu() {
+        const menuGrid = document.getElementById('menuGrid');
+        menuGrid.innerHTML = '<p style="color:#c9b29a; text-align:center; grid-column: 1/-1; padding: 2rem;">Memuat menu...</p>';
+
+        try {
+          const { data, error } = await supabase
+            .from('tabelmenu')
+            .select('nama_menu, harga, photo')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          menuGrid.innerHTML = ''; // Bersihkan loading
+
+          if (data && data.length > 0) {
+            data.forEach(item => {
+              let imgUrl = 'https://via.placeholder.com/400x400?text=No+Image';
+              if (item.photo) {
+                const { data: publicData } = supabase.storage.from('aset').getPublicUrl(item.photo);
+                imgUrl = publicData.publicUrl;
+              }
+
+              const card = document.createElement('div');
+              card.className = 'menu-item';
+              card.innerHTML = `
+                <img src="${imgUrl}" class="menu-img" alt="${item.nama_menu}">
+                <div class="menu-info">
+                  <div class="menu-name">${item.nama_menu}</div>
+                  <div class="menu-price">Rp ${Number(item.harga).toLocaleString('id-ID')}</div>
+                </div>
+              `;
+              menuGrid.appendChild(card);
+            });
+          } else {
+            menuGrid.innerHTML = '<p style="color:#c9b29a; text-align:center; grid-column: 1/-1; padding: 2rem;">Belum ada menu tersedia.</p>';
+          }
+        } catch (err) {
+          console.error('Gagal memuat menu:', err);
+          menuGrid.innerHTML = '<p style="color:#ff6b6b; text-align:center; grid-column: 1/-1; padding: 2rem;">Gagal memuat data menu.</p>';
+        }
+      }
+
+      loadMenu();
+
+      const loginForm = document.querySelector('#loginModal form');
+      
+      if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const usernameVal = document.getElementById('username').value;
+          const passwordVal = document.getElementById('password').value;
+          const btnLogin = document.querySelector('.btn-login');
+          const originalText = btnLogin.textContent;
+
+          // Loading state
+          btnLogin.textContent = 'Memuat...';
+          btnLogin.disabled = true;
+
+          try {
+            const { data, error } = await supabase
+              .from('tabelprofil')
+              .select('owner')
+              .eq('username', usernameVal)
+              .eq('password', passwordVal)
+              .maybeSingle();
+
+            if (data) {
+              alert(`Selamat datang ${data.owner}`);
+              window.location.href = 'dashboard.html';
+            } else {
+              alert("Maaf, Username atau password yang anda masukan salah.");
+            }
+          } catch (err) {
+            console.error('Login error:', err);
+            alert("Terjadi kesalahan saat login.");
+          } finally {
+            btnLogin.textContent = originalText;
+            btnLogin.disabled = false;
+          }
+        });
+      }
+
+      // === LOGIC TOMBOL PESAN SEKARANG ===
+      const btnOrderNow = document.getElementById('btnOrderNow');
+      const closedModal = document.getElementById('closedModal');
+      const closeClosedModal = document.getElementById('closeClosedModal');
+      const btnClosedOk = document.getElementById('btnClosedOk');
+      const closedMessage = document.getElementById('closedMessage');
+
+      function hideClosedModal() {
+        if (closedModal) closedModal.style.display = 'none';
+      }
+
+      if (closeClosedModal) closeClosedModal.addEventListener('click', hideClosedModal);
+      if (btnClosedOk) btnClosedOk.addEventListener('click', hideClosedModal);
+      
+      window.addEventListener('click', (e) => {
+        if (e.target === closedModal) hideClosedModal();
+      });
+
+      if (btnOrderNow) {
+        btnOrderNow.addEventListener('click', function(e) {
+          const statusDisplay = document.getElementById('operationalStatus');
+          
+          if (statusDisplay && statusDisplay.textContent.includes("Sorry, we're Closed today")) {
+            e.preventDefault();
+            const businessName = document.getElementById('headerBusinessName').textContent || 'Nerai Coffee';
+            
+            if (closedModal && closedMessage) {
+              closedMessage.textContent = `Maaf, hari ini ${businessName} tidak beroperasi, silakan lakukan pesanan saat kami sudah buka kembali. Terimakasih`;
+              closedModal.style.display = 'flex';
+            } else {
+              alert(`Maaf, hari ini ${businessName} tidak beroperasi, silakan lakukan pesanan saat kami sudah buka kembali. Terimakasih`);
+            }
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

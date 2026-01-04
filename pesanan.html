@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Nerai Coffee - Pemesanan</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- jsPDF untuk generate PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #0a0503;
+      color: #f8f1e9;
+      padding: 1rem;
+      min-height: 100vh;
+    }
+
+    header { text-align:center; padding:1.2rem 0; margin-bottom:1.5rem; }
+    .logo { font-size:2.8rem; font-weight:800; letter-spacing:-1.5px; color:#e6b989; }
+
+    h2 { font-size:1.4rem; color:#e6b989; margin:1.5rem 0 0.8rem; }
+
+    .form-group { margin-bottom:1.2rem; }
+    label { display:block; margin-bottom:0.5rem; font-size:0.95rem; color:#c9b29a; }
+    input, select {
+      width:100%;
+      padding:0.9rem;
+      border-radius:8px;
+      border:1px solid #3a2a1f;
+      background:#251a12;
+      color:#f8f1e9;
+      font-size:1rem;
+    }
+
+    .order-list-container, .payment-container {
+      background:#1a120c;
+      border-radius:12px;
+      padding:1.2rem;
+      margin-bottom:2rem;
+    }
+
+    .order-table {
+      width:100%;
+      border-collapse:collapse;
+      margin-bottom:1rem;
+      font-size:0.95rem;
+    }
+
+    .order-table th, .order-table td {
+      padding:0.8rem;
+      text-align:left;
+      border-bottom:1px solid #3a2a1f;
+      vertical-align: middle;
+    }
+
+    .order-table th { background:#251a12; color:#e6b989; font-weight:600; }
+
+    .total-row { font-weight:700; color:#e6b989; }
+
+    .action-btn {
+      background:none;
+      border:none;
+      font-size:1.4rem;
+      cursor:pointer;
+      padding:0.4rem;
+      border-radius:6px;
+      transition:background 0.2s;
+      margin:0 0.3rem;
+    }
+    .action-btn.edit { color:#e6b989; }
+    .action-btn.edit:hover { background:rgba(230,185,137,0.2); }
+    .action-btn.cancel { color:#ff6b6b; }
+    .action-btn.cancel:hover { background:rgba(255,107,107,0.2); }
+
+    .add-btn {
+      background:#c17c4a;
+      color:white;
+      border:none;
+      width:100%;
+      padding:1rem;
+      border-radius:10px;
+      font-size:1.1rem;
+      font-weight:600;
+      cursor:pointer;
+      margin-top:1rem;
+    }
+    .add-btn:active { background:#d18f5e; }
+
+    .submit-btn {
+      background:linear-gradient(135deg, #c17c4a, #d18f5e);
+      color:white;
+      border:none;
+      width:100%;
+      padding:1.3rem;
+      border-radius:50px;
+      font-size:1.3rem;
+      font-weight:700;
+      margin-top:2rem;
+      cursor:pointer;
+      box-shadow:0 6px 20px rgba(193,124,74,0.5);
+      transition: all 0.3s ease;
+    }
+    .submit-btn:hover {
+      background: linear-gradient(135deg, #75d734, #478608);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(193,124,74,0.7);
+    }
+    .submit-btn:active { transform:translateY(2px); box-shadow: 0 3px 10px rgba(193,124,74,0.4); }
+
+    .cancel-order-btn {
+      background: transparent;
+      border: 2px solid #3a2a1f;
+      color: #c9b29a;
+      width: 100%;
+      padding: 1rem;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cancel-order-btn:hover {
+      background: #ff6b6b;
+      border-color: #ff6b6b;
+      color: #ffffff;
+    }
+
+    .empty-message {
+      text-align:center;
+      color:#c9b29a;
+      padding:2rem 0;
+      font-style:italic;
+    }
+
+    .quantity-control {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+      margin:1.5rem 0;
+    }
+
+    .quantity-btn {
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      background:#c17c4a;
+      color:white;
+      border:none;
+      font-size:2rem;
+      font-weight:bold;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:all 0.15s ease;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .quantity-btn:active {
+      transform:scale(0.88);
+      background:#d18f5e;
+    }
+
+    .quantity-display {
+      min-width:60px;
+      text-align:center;
+      font-size:1.8rem;
+      font-weight:700;
+      color:#e6b989;
+    }
+
+    .confirm-btn {
+      background:#c17c4a;
+      color:white;
+      border:none;
+      width:100%;
+      padding:1.1rem;
+      border-radius:10px;
+      font-size:1.1rem;
+      font-weight:600;
+      margin-top:1.5rem;
+      cursor:pointer;
+    }
+    .confirm-btn:active { background:#d18f5e; }
+
+    .modal {
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.85);
+      z-index:1000;
+      align-items:center;
+      justify-content:center;
+      padding:1rem;
+    }
+
+    .modal-content {
+      background:#1a120c;
+      border-radius:12px;
+      width:100%;
+      max-width:420px;
+      max-height:90vh;
+      overflow-y:auto;
+    }
+
+    .modal-header {
+      padding:1.2rem;
+      border-bottom:1px solid rgba(230,185,137,0.15);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:sticky;
+      top:0;
+      background:#1a120c;
+      z-index:10;
+    }
+
+    .modal-title { font-size:1.3rem; color:#e6b989; }
+
+    .close-modal {
+      background:none;
+      border:none;
+      color:#c9b29a;
+      font-size:1.8rem;
+      cursor:pointer;
+    }
+
+    .menu-list { padding:1rem; }
+
+    .menu-item {
+      display:flex;
+      align-items:center;
+      padding:1rem;
+      background:#251a12;
+      border-radius:8px;
+      margin-bottom:0.8rem;
+      cursor:pointer;
+      transition:background 0.2s;
+    }
+    .menu-item:hover { background:#2f2219; }
+
+    .menu-thumb {
+      width:60px;
+      height:60px;
+      object-fit:cover;
+      border-radius:6px;
+      margin-right:1rem;
+    }
+
+    .menu-info { flex:1; }
+    .menu-name { font-weight:600; margin-bottom:0.2rem; }
+    .menu-price { color:#e6b989; font-weight:700; }
+
+    .product-detail-img {
+      width:100%;
+      aspect-ratio:1/1;
+      object-fit:cover;
+      border-radius:10px;
+      margin-bottom:1.2rem;
+    }
+
+    .confirm-modal {
+      text-align:center;
+      padding:2rem 1.5rem;
+    }
+
+    .confirm-modal p {
+      font-size:1.1rem;
+      margin-bottom:2rem;
+    }
+
+    .confirm-buttons {
+      display:flex;
+      gap:1rem;
+    }
+
+    .confirm-buttons button {
+      flex:1;
+      padding:1rem;
+      border-radius:8px;
+      font-size:1.1rem;
+      font-weight:600;
+      cursor:pointer;
+      border:none;
+    }
+
+    .confirm-buttons .delete { background:#ff6b6b; color:white; }
+    .confirm-buttons .cancel { background:#3a2a1f; color:#c9b29a; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">NERAI</div>
+  </header>
+
+  <h2>Detail Order</h2>
+  <div class="form-group">
+    <label for="orderId">ID Order</label>
+    <input type="text" id="orderId" readonly style="background:#1a120c; color:#888; cursor:not-allowed;">
+  </div>
+  <div class="form-group">
+    <label for="orderDate">Tanggal Order</label>
+    <input type="date" id="orderDate">
+  </div>
+
+  <h2>Identitas Pemesan</h2>
+  <div class="form-group">
+    <label for="customerName">Nama Lengkap</label>
+    <input type="text" id="customerName" placeholder="Masukkan nama lengkap" required>
+  </div>
+  <div class="form-group">
+    <label for="phone">Nomor Telepon / WhatsApp</label>
+    <input type="tel" id="phone" placeholder="08xx-xxxx-xxxx" required>
+  </div>
+  <div class="form-group">
+    <label for="email">Email (opsional)</label>
+    <input type="email" id="email" placeholder="contoh@email.com">
+  </div>
+
+  <h2>Daftar Pesanan</h2>
+  <div class="order-list-container">
+    <table class="order-table" id="orderTable">
+      <thead>
+        <tr>
+          <th>Id-Item</th>
+          <th>Id-Order</th>
+          <th>Nama Produk</th>
+          <th>Harga Satuan</th>
+          <th>Jumlah</th>
+          <th>Total</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="orderBody"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="5">TOTAL</td>
+          <td id="grandTotal">Rp 0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div id="emptyMessage" class="empty-message">
+      Belum ada pesanan. Klik tombol di bawah!
+    </div>
+
+    <button class="add-btn" id="addOrderBtn">+ Tambah Pesanan</button>
+  </div>
+
+  <!-- Container Metode Pembayaran -->
+  <div class="payment-container">
+    <h2>Metode Pembayaran</h2>
+    <div class="form-group">
+      <label for="paymentMethod">Pilih Metode Bayar</label>
+      <select id="paymentMethod">
+        <option value="">Pilih metode</option>
+      </select>
+    </div>
+
+    <div id="paymentInfo" class="payment-info" style="display:none;">
+      <p>Silakan transfer ke:</p>
+      <p><strong>Nomor Rekening/Nomor Tujuan:</strong> <span id="accountNumber">---</span></p>
+      <p><strong>Nama Akun:</strong> <span id="accountName">Nerai Coffee</span></p>
+      <p style="margin-top:1rem;"><strong>Upload Bukti Pembayaran</strong></p>
+      <input type="file" id="proofUpload" accept="image/*,.pdf">
+      <small style="color:#c9b29a;">(wajib untuk metode digital)</small>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submitOrder">KIRIM PESANAN</button>
+  <button class="cancel-order-btn" onclick="window.location.href='index.html'">Batalkan Pesanan</button>
+
+  <!-- Modal Daftar Menu -->
+  <div class="modal" id="menuModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Pilih Menu</h3>
+        <button class="close-modal" onclick="document.getElementById('menuModal').style.display='none'">×</button>
+      </div>
+      <div class="menu-list" id="menuList"></div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Pesanan -->
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detailTitle"></h3>
+        <button class="close-modal" onclick="document.getElementById('detailModal').style.display='none'">×</button>
+      </div>
+      <div style="padding:1.2rem;">
+        <img id="detailImg" class="product-detail-img" src="" alt="Produk">
+        <div id="detailPrice" class="product-detail-price"></div>
+
+        <div class="quantity-control">
+          <button class="quantity-btn" onclick="tempQuantity=Math.max(1,tempQuantity-1);document.getElementById('detailQuantity').textContent=tempQuantity;">−</button>
+          <span class="quantity-display" id="detailQuantity">1</span>
+          <button class="quantity-btn" onclick="tempQuantity++;document.getElementById('detailQuantity').textContent=tempQuantity;">+</button>
+        </div>
+
+        <button class="confirm-btn" id="confirmAdd">Tambah ke Pesanan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Pesanan -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="editTitle">Edit Pesanan</h3>
+        <button class="close-modal" onclick="document.getElementById('editModal').style.display='none'">×</button>
+      </div>
+      <div style="padding:1.2rem;">
+        <img id="editImg" class="product-detail-img" src="" alt="Produk">
+        <div id="editPrice" class="product-detail-price"></div>
+
+        <div class="quantity-control">
+          <button class="quantity-btn" onclick="tempEditQuantity=Math.max(1,tempEditQuantity-1);document.getElementById('editQuantity').textContent=tempEditQuantity;">−</button>
+          <span class="quantity-display" id="editQuantity">1</span>
+          <button class="quantity-btn" onclick="tempEditQuantity++;document.getElementById('editQuantity').textContent=tempEditQuantity;">+</button>
+        </div>
+
+        <button class="confirm-btn" id="updateBtn">Update Pesanan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Hapus -->
+  <div class="modal" id="confirmDeleteModal">
+    <div class="modal-content">
+      <div class="confirm-modal">
+        <p>Apakah Anda ingin membatalkan pesanan ini?</p>
+        <div class="confirm-buttons">
+          <button class="delete-btn" id="yesDelete">Batalkan</button>
+          <button class="confirm-btn" id="noDelete">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ... (data menuItems, variabel orders, currentItem, tempQuantity, dll tetap sama seperti sebelumnya)
+
+    // Init Supabase
+    const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let menuItems = [];
+    let paymentMethodsData = [];
+
+    let orders = [];
+    let currentItem = null;
+    let tempQuantity = 1;
+    let tempEditQuantity = 1;
+    let editingIndex = -1;
+    let deletingIndex = -1;
+
+    const orderBody = document.getElementById('orderBody');
+    const grandTotalEl = document.getElementById('grandTotal');
+    const emptyMessage = document.getElementById('emptyMessage');
+    const paymentMethod = document.getElementById('paymentMethod');
+    const paymentInfo = document.getElementById('paymentInfo');
+    const accountNumber = document.getElementById('accountNumber');
+    const accountName = document.getElementById('accountName');
+
+    // Render menu, showDetailModal, confirmAdd, showEditModal, updatePesanan, dll tetap sama
+    // ... (kode renderMenuList, showDetailModal, confirmAdd, renderOrders, updateTotal, dll seperti versi sebelumnya)
+
+    async function fetchMenu() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('tabelmenu')
+          .select('id, nama_menu, harga, photo')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          menuItems = data.map(item => {
+            let imgUrl = 'https://via.placeholder.com/600?text=No+Image';
+            if (item.photo) {
+              const { data: publicData } = supabaseClient.storage.from('aset').getPublicUrl(item.photo);
+              imgUrl = publicData.publicUrl;
+            }
+            return {
+              id: item.id,
+              name: item.nama_menu,
+              price: Number(item.harga),
+              img: imgUrl
+            };
+          });
+        }
+      } catch (err) {
+        console.error('Gagal memuat menu:', err);
+      }
+    }
+
+    async function fetchPaymentMethods() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('tabelrekening')
+          .select('*')
+          .order('nama_bank', { ascending: true });
+
+        if (error) throw error;
+
+        paymentMethodsData = data || [];
+        const select = document.getElementById('paymentMethod');
+        
+        // Pertahankan opsi default dan Cash, tambahkan data dari DB
+        // Opsi Cash sudah ada di HTML, kita append setelahnya atau rebuild
+        // Agar rapi, kita rebuild opsi dinamis setelah opsi Cash
+        
+        paymentMethodsData.forEach(bank => {
+          const option = document.createElement('option');
+          option.value = bank.nama_bank;
+          option.textContent = bank.nama_bank;
+          select.appendChild(option);
+        });
+      } catch (err) { console.error('Gagal memuat metode pembayaran:', err); }
+    }
+
+    function renderMenuList() {
+      const menuList = document.getElementById('menuList');
+      menuList.innerHTML = '';
+
+      if (menuItems.length === 0) {
+        menuList.innerHTML = '<p style="text-align:center; color:#c9b29a; padding:2rem;">Belum ada menu tersedia.</p>';
+        return;
+      }
+
+      menuItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'menu-item';
+        div.innerHTML = `
+          <img src="${item.img}" class="menu-thumb" alt="${item.name}">
+          <div class="menu-info">
+            <div class="menu-name">${item.name}</div>
+            <div class="menu-price">Rp ${item.price.toLocaleString('id-ID')}</div>
+          </div>
+        `;
+        div.onclick = () => showDetailModal(item);
+        menuList.appendChild(div);
+      });
+    }
+
+    function showDetailModal(item) {
+      currentItem = item;
+      tempQuantity = 1;
+
+      document.getElementById('detailTitle').textContent = item.name;
+      document.getElementById('detailImg').src = item.img;
+      document.getElementById('detailPrice').textContent = `Rp ${item.price.toLocaleString('id-ID')}`;
+      document.getElementById('detailQuantity').textContent = tempQuantity;
+
+      document.getElementById('menuModal').style.display = 'none';
+      document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function confirmAdd() {
+      const existing = orders.find(o => o.name === currentItem.name);
+      if (existing) {
+        existing.quantity += tempQuantity;
+      } else {
+        orders.push({ ...currentItem, quantity: tempQuantity });
+      }
+
+      renderOrders();
+      updateTotal();
+      document.getElementById('detailModal').style.display = 'none';
+    }
+
+    function showEditModal(index) {
+      const item = orders[index];
+      editingIndex = index;
+      tempEditQuantity = item.quantity;
+
+      document.getElementById('editTitle').textContent = item.name;
+      document.getElementById('editImg').src = menuItems.find(m => m.name === item.name)?.img || '';
+      document.getElementById('editPrice').textContent = `Rp ${item.price.toLocaleString('id-ID')}`;
+      document.getElementById('editQuantity').textContent = tempEditQuantity;
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function updatePesanan() {
+      if (editingIndex !== -1) {
+        orders[editingIndex].quantity = tempEditQuantity;
+        renderOrders();
+        updateTotal();
+      }
+      document.getElementById('editModal').style.display = 'none';
+    }
+
+    function confirmDelete(index) {
+      deletingIndex = index;
+      document.getElementById('confirmDeleteModal').style.display = 'flex';
+    }
+
+    function yesDelete() {
+      if (deletingIndex !== -1) {
+        orders.splice(deletingIndex, 1);
+        renderOrders();
+        updateTotal();
+      }
+      document.getElementById('confirmDeleteModal').style.display = 'none';
+      deletingIndex = -1;
+    }
+
+    function noDelete() {
+      document.getElementById('confirmDeleteModal').style.display = 'none';
+      deletingIndex = -1;
+    }
+
+    function renderOrders() {
+      orderBody.innerHTML = '';
+      orders.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${document.getElementById('orderId').value}.${index + 1}</td>
+          <td>${document.getElementById('orderId').value}</td>
+          <td>${item.name}</td>
+          <td>Rp ${item.price.toLocaleString('id-ID')}</td>
+          <td>${item.quantity}</td>
+          <td>Rp ${(item.price * item.quantity).toLocaleString('id-ID')}</td>
+          <td>
+            <button class="action-btn edit" onclick="showEditModal(${index})">✏️</button>
+            <button class="action-btn cancel" onclick="confirmDelete(${index})">🗑️</button>
+          </td>
+        `;
+        orderBody.appendChild(row);
+      });
+    }
+
+    function updateTotal() {
+      const total = orders.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      grandTotalEl.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+      emptyMessage.style.display = orders.length === 0 ? 'block' : 'none';
+    }
+
+    // Logika Metode Pembayaran
+    paymentMethod.addEventListener('change', function() {
+      const method = this.value;
+      paymentInfo.style.display = 'none';
+
+      // Jika metode dipilih (semua metode sekarang adalah digital/transfer)
+      if (method) {
+        const bankData = paymentMethodsData.find(item => item.nama_bank === method);
+        
+        if (bankData) {
+          paymentInfo.style.display = 'block';
+          accountNumber.textContent = bankData.nomor_rekening;
+          accountName.textContent = bankData.pemilik;
+        }
+      }
+    });
+
+    // Event Listeners
+    document.getElementById('addOrderBtn').onclick = () => {
+      renderMenuList();
+      document.getElementById('menuModal').style.display = 'flex';
+    };
+
+    document.getElementById('confirmAdd').onclick = confirmAdd;
+
+    document.querySelectorAll('#detailModal .quantity-btn')[0].onclick = () => {
+      tempQuantity = Math.max(1, tempQuantity - 1);
+      document.getElementById('detailQuantity').textContent = tempQuantity;
+    };
+    document.querySelectorAll('#detailModal .quantity-btn')[1].onclick = () => {
+      tempQuantity++;
+      document.getElementById('detailQuantity').textContent = tempQuantity;
+    };
+
+    document.querySelectorAll('#editModal .quantity-btn')[0].onclick = () => {
+      tempEditQuantity = Math.max(1, tempEditQuantity - 1);
+      document.getElementById('editQuantity').textContent = tempEditQuantity;
+    };
+    document.querySelectorAll('#editModal .quantity-btn')[1].onclick = () => {
+      tempEditQuantity++;
+      document.getElementById('editQuantity').textContent = tempEditQuantity;
+    };
+
+    document.getElementById('updateBtn').onclick = updatePesanan;
+
+    document.getElementById('yesDelete').onclick = yesDelete;
+    document.getElementById('noDelete').onclick = noDelete;
+
+    // Submit Pesanan + Generate PDF
+    document.getElementById('submitOrder').onclick = async function() {
+      const name = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const method = document.getElementById('paymentMethod').value;
+      const orderId = document.getElementById('orderId').value;
+      const orderDateVal = document.getElementById('orderDate').value;
+
+      if (orders.length === 0) {
+        return alert('Silakan lengkapi data pesanan anda terlebih dahulu\n(Belum ada item pesanan)');
+      }
+
+      if (!name || !phone || !method) {
+        return alert('Silakan lengkapi data pesanan anda terlebih dahulu');
+      }
+
+      const file = document.getElementById('proofUpload').files[0];
+      if (!file) {
+        return alert('Silakan lengkapi data pesanan anda terlebih dahulu\n(Bukti pembayaran wajib untuk metode digital)');
+      }
+
+      try {
+        // 1. Upload Bukti Bayar ke Storage 'aset'
+        // Nama file dibuat unik dengan ID Order + Timestamp
+        const fileName = `bukti-bayar/${orderId}_${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+        
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from('aset')
+          .upload(fileName, file);
+
+        if (uploadError) throw new Error('Gagal upload bukti bayar: ' + uploadError.message);
+
+        // 2. Ambil Public URL
+        const { data: urlData } = supabaseClient.storage
+          .from('aset')
+          .getPublicUrl(fileName);
+
+        // 3. Simpan ke Supabase (tabelcustomer)
+        const { error } = await supabaseClient
+          .from('tabelcustomer')
+          .insert([{
+            id_order: orderId,
+            tanggal: orderDateVal,
+            nama: name,
+            tlp: phone,
+            email: email,
+            metode_bayar: method,
+            bukti_bayar: urlData.publicUrl
+          }]);
+
+        if (error) throw error;
+
+        // 4. Simpan Detail Pesanan ke Supabase (tabelorder)
+        const orderItems = orders.map((item, index) => ({
+          id_item: `${orderId}.${index + 1}`,
+          id_order: orderId,
+          nama_produk: item.name,
+          harga_satuan: item.price,
+          jumlah: item.quantity,
+          total: item.price * item.quantity
+        }));
+
+        const { error: orderError } = await supabaseClient
+          .from('tabelorder')
+          .insert(orderItems);
+
+        if (orderError) throw new Error('Gagal menyimpan detail pesanan: ' + orderError.message);
+
+        // Notifikasi sukses
+        alert('Terimakasih telah menggunakan fitur Take Away di Nerai Coffee, kami akan memberitahu anda jika pesanan anda telah siap di ambil');
+
+        // Generate & Download PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("NERAI COFFEE - PESANAN TAKE AWAY", 105, 20, { align: "center" });
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text(`ID Order: ${orderId}`, 20, 35);
+        doc.text(`Tanggal: ${orderDateVal}`, 20, 45);
+        doc.text(`Nama: ${name}`, 20, 55);
+        doc.text(`Telepon: ${phone}`, 20, 65);
+        doc.text(`Metode Bayar: ${method}`, 20, 75);
+
+        doc.text(`Rekening: ${accountNumber.textContent} (${accountName.textContent})`, 20, 85);
+
+        doc.line(20, 95, 190, 95);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("DAFTAR PESANAN", 105, 105, { align: "center" });
+
+        let y = 115;
+        doc.setFont("helvetica", "normal");
+        orders.forEach(item => {
+          doc.text(`${item.name}`, 20, y);
+          doc.text(`${item.quantity} x Rp ${item.price.toLocaleString('id-ID')}`, 100, y);
+          doc.text(`Rp ${(item.price * item.quantity).toLocaleString('id-ID')}`, 170, y, { align: "right" });
+          y += 10;
+        });
+
+        doc.line(20, y, 190, y);
+        y += 10;
+        doc.setFont("helvetica", "bold");
+        doc.text("TOTAL", 140, y);
+        doc.text(grandTotalEl.textContent, 170, y, { align: "right" });
+
+        // Download PDF
+        doc.save('Pesanan_Nerai_Coffee.pdf');
+
+        // Reset Form dan Tabel setelah berhasil
+        document.getElementById('customerName').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('paymentMethod').value = '';
+        document.getElementById('proofUpload').value = '';
+        document.getElementById('paymentInfo').style.display = 'none';
+        orders = [];
+        renderOrders();
+        updateTotal();
+        await generateOrderId(); // Generate ID baru untuk pesanan selanjutnya
+
+      } catch (err) {
+        console.error('Gagal menyimpan pesanan:', err);
+        alert('Gagal menyimpan pesanan ke database: ' + err.message);
+      }
+    };
+
+    async function generateOrderId() {
+      try {
+        let orderCount = 0;
+        // 1. Get the count of existing orders from 'tabelcustomer'
+        const { count, error } = await supabaseClient
+          .from('tabelcustomer') // Sesuai permintaan: menghitung data di tabelcustomer
+          .select('id_order', { count: 'exact', head: true });
+
+        if (error) {
+          // Jika tabel tidak ada (PGRST116), anggap hitungan 0. Untuk error lain, lemparkan.
+          if (error.code === 'PGRST116') {
+            console.warn('Tabel "tabelcustomer" tidak ditemukan, nomor urut dimulai dari 1.');
+            orderCount = 0;
+          } else {
+            throw error;
+          }
+        } else {
+          orderCount = count;
+        }
+
+        // 2. Siapkan nomor urut berikutnya, format menjadi 3 digit (misal: 001, 012)
+        const nextSequence = (orderCount + 1).toString().padStart(3, '0');
+
+        // 3. Format tanggal menjadi ddmmyy
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0'); // getMonth() dimulai dari 0
+        const year = now.getFullYear().toString().slice(-2);
+        const datePart = `${day}${month}${year}`;
+
+        // 4. Gabungkan semua bagian menjadi ID Order final
+        const newOrderId = `NIC-${datePart}-${nextSequence}`;
+
+        // 5. Masukkan nilainya ke input box
+        document.getElementById('orderId').value = newOrderId;
+
+      } catch (err) {
+        console.error('Gagal membuat ID Order:', err);
+        // Fallback ke ID acak jika terjadi error
+        const now = new Date();
+        const randomId = 'ERR-' + now.getTime().toString().slice(-8);
+        document.getElementById('orderId').value = randomId;
+        alert('Gagal terhubung ke server untuk membuat ID Order. ID sementara akan digunakan.');
+      }
+    }
+
+    // Inisialisasi
+    document.addEventListener('DOMContentLoaded', async () => {
+      fetchMenu();
+      fetchPaymentMethods();
+
+      // Generate ID Order & Set Tanggal Otomatis
+      await generateOrderId();
+      const now = new Date();
+      document.getElementById('orderDate').value = now.toISOString().split('T')[0];
+    });
+    updateTotal();
+  </script>
+</body>
+</html>

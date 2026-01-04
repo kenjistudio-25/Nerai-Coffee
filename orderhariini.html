@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Hari Ini - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #000000;
+      color: #ef6a05;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(40, 12, 1, 0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #e7b089;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #84e8f3;
+    }
+
+    /* ================== MAIN CONTENT ================== */
+    .main-content {
+      padding: 100px 2rem 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #f8f7f6;
+      margin-bottom: 2rem;
+      font-size: 2.2rem;
+    }
+
+    .date-display {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #7febeb;
+      margin-bottom: 1.5rem;
+    }
+
+    .clock-display {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 2rem;
+    }
+
+    /* Tab custom style */
+    .nav-tabs {
+      border-bottom: 2px solid #e97528;
+      margin-bottom: 2rem;
+    }
+    .nav-tabs .nav-link {
+      color: #c9b29a;
+      font-weight: 600;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 0.8rem 1.5rem;
+    }
+    .nav-tabs .nav-link:hover {
+      background-color: #e97528;
+      color: #000000;
+    }
+    .nav-tabs .nav-link.active {
+      color: #9aed5b;
+      background: transparent;
+      border-bottom: 3px solid #9aed5b;
+    }
+
+    /* Layout Container Order */
+    .orders-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 1.5rem;
+      background: rgba(232, 111, 111, 0.03);
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 1px solid #ed7728;
+    }
+
+    /* Custom Style untuk Tab On Site (Nuansa Hijau) */
+    #onsite .orders-layout {
+      background: rgba(154, 237, 91, 0.03);
+      border: 1px solid #9aed5b;
+    }
+    #onsite .card {
+      border-color: #9aed5b;
+    }
+
+    .order-sidebar, .order-details {
+      background: #000000;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #3a2a1f;
+      min-height: 500px;
+      overflow-y: auto;
+    }
+
+    .order-sidebar h3, .order-details h3 {
+      color: #e6b989;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #554236;
+      padding-bottom: 0.8rem;
+    }
+
+    /* Table Styles untuk Detail Pesanan */
+    .detail-table { width: 100%; border-collapse: collapse; }
+    .detail-table th, .detail-table td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #3a2a1f; color: #f8f1e9; }
+    .detail-table th { background: #251a12; color: #e6b989; font-weight: 600; }
+    .detail-table td { vertical-align: middle; }
+
+    @media (max-width: 768px) {
+      .orders-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Scrollable Table Styles */
+    .table-responsive {
+      max-height: 500px;
+      overflow-y: auto;
+      position: relative;
+      border: 1px solid #f57a27;
+      border-radius: 8px;
+    }
+    .detail-table thead th { position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+    .detail-table tfoot td { 
+      position: sticky; bottom: 0; background: #251a12; z-index: 10; 
+      border-top: 2px solid #c17c4a; box-shadow: 0 -2px 5px rgba(0,0,0,0.5); 
+    }
+
+    /* Form Styles di Sidebar */
+    .sidebar-form-group {
+      margin-bottom: 1rem;
+    }
+    .sidebar-input {
+      width: 100%; padding: 0.7rem; background: #251a12; border: 1px solid #3a2a1f; border-radius: 6px; color: #f8f1e9; font-size: 0.9rem;
+    }
+    .sidebar-input:focus { outline:none; border-color:#c17c4a; }
+
+    .btn-complete {
+      width: 100%;
+      padding: 0.8rem;
+      background: #c17c4a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: background 0.2s;
+    }
+    .btn-complete:hover { background: #28a745; }
+    .btn-complete:disabled {
+      background: #3a2a1f;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    /* Custom Outline Buttons */
+    .btn-action-outline {
+      background: transparent;
+      border: 1px solid #c17c4a;
+      color: #c17c4a;
+    }
+    .btn-action-outline:hover {
+      background: #e97528;
+      color: #000000;
+      border-color: #e97528;
+    }
+
+    /* Stats Grid & Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 16px;
+      padding: 1.8rem;
+      border: 1px solid #e97528;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover { transform: translateY(-6px); }
+
+    .card-icon { font-size: 2.2rem; color: #eee6e1; margin-bottom: 1rem; }
+    .card-title { color: #c9b29a; font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #9aed5b;
+    }
+
+    /* Placeholder untuk tab On Site */
+    .placeholder-content {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #c9b29a;
+      font-size: 1.2rem;
+    }
+
+    /* Styles untuk Menu Grid (Diadaptasi dari pesanan.html) */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .menu-item {
+      background: #251a12;
+      border-radius: 8px;
+      padding: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: 1px solid #3a2a1f;
+    }
+    .menu-item:hover { background: #2f2219; border-color: #c17c4a; }
+    .menu-thumb {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+    }
+    .menu-name { font-size: 0.9rem; font-weight: 600; color: #f8f1e9; margin-bottom: 0.2rem; }
+    .menu-price { font-size: 0.9rem; font-weight: 700; color: #e6b989; }
+
+    /* Quantity Control Styles */
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .quantity-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #c17c4a;
+      color: white;
+      border: none;
+      font-size: 1.5rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .quantity-display {
+      font-size: 1.5rem; font-weight: 700; color: #e6b989; min-width: 40px; text-align: center;
+    }
+
+    /* Light Mode Table for Modal */
+    .light-mode-table { width: 100%; border-collapse: collapse; }
+    .light-mode-table th, .light-mode-table td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #dee2e6; color: #333; }
+    .light-mode-table th { background: #e9ecef; color: #333; font-weight: 600; }
+    .light-mode-table td { vertical-align: middle; }
+    .light-mode-table tfoot tr { background: #e9ecef; font-weight: bold; }
+    .light-mode-table tfoot td { color: #333; border-top: 2px solid #ced4da; }
+
+    /* Badge Styles */
+    .notification-badge {
+      background: #ff6b6b;
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h1 style="text-align: center; margin-bottom: 0.5rem;">Order Hari Ini</h1>
+    <div id="dateDisplay" class="date-display" style="margin-bottom: 0.5rem;"></div>
+    <div id="clockDisplay" class="clock-display"></div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs justify-content-start" id="orderTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="online-tab" data-bs-toggle="tab" data-bs-target="#online" type="button" role="tab">Transaksi Online</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="onsite-tab" data-bs-toggle="tab" data-bs-target="#onsite" type="button" role="tab">Transaksi On Site</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="total-tab" data-bs-toggle="tab" data-bs-target="#total" type="button" role="tab">Total Transaksi Online dan Onsite</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="orderTabContent">
+      <!-- TAB 1: Transaksi Online -->
+      <div class="tab-pane fade show active" id="online" role="tabpanel">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="card">
+            <i class="fas fa-check-circle card-icon"></i>
+            <div class="card-title">Total Transaksi Selesai</div>
+            <div class="card-value" id="totalTransactionsDisplay">0</div>
+          </div>
+
+          <div class="card">
+            <i class="fas fa-wallet card-icon"></i>
+            <div class="card-title">Total Pemasukan</div>
+            <div class="card-value" id="dailyIncomeDisplay">Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Layout 2 Kolom: Daftar ID + Detail Pesanan -->
+        <div class="orders-layout">
+          <div class="order-sidebar">
+            <h3>Daftar Id-Order</h3>
+            
+            <div class="sidebar-form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                <label style="color:#c9b29a; font-size:0.9rem; margin:0;">Pilih ID Order</label>
+                <span id="orderBadge" class="notification-badge" style="display:none;">0</span>
+              </div>
+              <select id="orderSelect" class="sidebar-input">
+                <option value="">Memuat...</option>
+              </select>
+            </div>
+
+            <div id="orderDetailsForm" style="display:none; margin-top:1.5rem; border-top:1px solid #3a2a1f; padding-top:1rem;">
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Tanggal Order</label>
+                <input type="text" id="detailDate" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Nama Customer</label>
+                <input type="text" id="detailName" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Telepon</label>
+                <input type="text" id="detailPhone" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Email</label>
+                <input type="text" id="detailEmail" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Metode Bayar</label>
+                <input type="text" id="detailMethod" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Bukti Bayar</label>
+                <div style="display:flex; gap:0.5rem;">
+                   <input type="text" id="detailProof" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a; text-overflow:ellipsis;">
+                   <a id="btnViewProof" href="#" target="_blank" style="display:none; align-items:center; justify-content:center; padding:0 0.8rem; background:#c17c4a; color:white; border-radius:6px; text-decoration:none;"><i class="fas fa-eye"></i></a>
+                </div>
+              </div>
+            </div>
+            <button id="btnCompleteOrder" class="btn-complete" disabled>Pesanan Selesai</button>
+          </div>
+
+          <div class="order-details">
+            <h3>Detail Pesanan</h3>
+            <div class="table-responsive">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Id Item</th>
+                    <th>Nama Produk</th>
+                    <th style="text-align:right;">Harga</th>
+                    <th style="text-align:center;">Jml</th>
+                    <th style="text-align:right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="orderDetailBody">
+                  <tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Silakan pilih ID Order di samping untuk melihat detail.</td></tr>
+                </tbody>
+                <tfoot>
+                  <tr style="background:#251a12; font-weight:bold;">
+                    <td colspan="4" style="text-align:right; color:#e6b989;">TOTAL</td>
+                    <td id="totalValue" style="text-align:right; color:#e6b989;">Rp 0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ringkasan Transaksi -->
+        <h3 style="color:#e6b989; margin: 2rem 0 1rem;">Ringkasan Transaksi</h3>
+        <div class="table-responsive">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th style="text-align:center; width:60px;">No</th>
+                <th>Id Order</th>
+                <th>Tanggal</th>
+                <th>Nama Customer</th>
+                <th style="text-align:right;">Total Transaksi</th>
+              </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+              <tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+          <button id="btnRefresh" class="btn-complete btn-action-outline" style="margin-top: 0;">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+          <button id="btnClosingDay" class="btn-complete btn-action-outline" style="margin-top: 0;">Closing Day</button>
+          <button onclick="window.location.href='dashboard.html'" class="btn-complete btn-action-outline" style="margin-top: 0;">Kembali Ke Dashboard</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Transaksi On Site (Placeholder) -->
+      <div class="tab-pane fade" id="onsite" role="tabpanel">
+        <!-- Stats Grid Onsite -->
+        <div class="stats-grid">
+          <div class="card">
+            <i class="fas fa-check-circle card-icon"></i>
+            <div class="card-title">Total Transaksi Selesai</div>
+            <div class="card-value" id="totalTransactionsOnsite">0</div>
+          </div>
+
+          <div class="card">
+            <i class="fas fa-wallet card-icon"></i>
+            <div class="card-title">Total Pemasukan</div>
+            <div class="card-value" id="dailyIncomeOnsite">Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Layout Onsite -->
+        <div class="orders-layout">
+          <div class="order-sidebar">
+            <h3>Daftar Id Transaksi</h3>
+            
+            <!-- Tombol Tambah Transaksi -->
+            <button id="btnAddOnsite" class="btn-complete" style="margin-bottom: 1.5rem; background: #e97528;">
+              <i class="fas fa-plus"></i> Tambah Transaksi
+            </button>
+
+            <div class="sidebar-form-group">
+              <label style="color:#c9b29a; font-size:0.9rem; display:block; margin-bottom:0.5rem;">Pilih ID Transaksi</label>
+              <select id="onsiteOrderSelect" class="sidebar-input">
+                <option value="">-- Pilih ID --</option>
+              </select>
+            </div>
+
+            <div id="onsiteDetailsForm" style="display:none; margin-top:1.5rem; border-top:1px solid #3a2a1f; padding-top:1rem;">
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Id Transaksi</label>
+                <input type="text" id="onsiteDetailId" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Tanggal</label>
+                <input type="text" id="onsiteDetailDate" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Metode Bayar</label>
+                <input type="text" id="onsiteDetailMethod" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+              <div class="sidebar-form-group">
+                <label style="color:#888; font-size:0.8rem;">Status Bayar</label>
+                <input type="text" id="onsiteDetailStatus" readonly class="sidebar-input" style="background:#1a120c; color:#c9b29a;">
+              </div>
+            </div>
+            
+            <button id="btnCompleteOnsite" class="btn-complete" disabled>Pesanan Selesai</button>
+          </div>
+
+          <div class="order-details">
+            <h3>Detail Pesanan On Site</h3>
+            <div class="table-responsive">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Id Item</th>
+                    <th>Nama Produk</th>
+                    <th style="text-align:right;">Harga</th>
+                    <th style="text-align:center;">Jml</th>
+                    <th style="text-align:right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="onsiteOrderDetailBody">
+                  <tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Silakan pilih ID Transaksi di samping.</td></tr>
+                </tbody>
+                <tfoot>
+                  <tr style="background:#251a12; font-weight:bold;">
+                    <td colspan="4" style="text-align:right; color:#e6b989;">TOTAL</td>
+                    <td id="onsiteTotalValue" style="text-align:right; color:#e6b989;">Rp 0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+          <button id="btnRefreshOnsite" class="btn-complete btn-action-outline" style="margin-top: 0;">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+          <button onclick="window.location.href='dashboard.html'" class="btn-complete btn-action-outline" style="margin-top: 0;">Kembali Ke Dashboard</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: Total Transaksi Online dan Onsite -->
+      <div class="tab-pane fade" id="total" role="tabpanel">
+        <div class="placeholder-content">
+          <p>Ringkasan Total Transaksi Online dan Onsite akan ditampilkan di sini.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Transaksi Onsite -->
+  <div class="modal fade" id="modalAddOnsite" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content" style="background: #ffffff; color: #333;">
+        <div class="modal-header" style="border-bottom: 1px solid #dee2e6;">
+          <h5 class="modal-title" style="color: #333;">Data Transaksi On Site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="container-identitas" style="padding: 1rem; border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">
+            <h6 style="color: #333; margin-bottom: 1rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem;">Identitas Transaksi</h6>
+            <div class="mb-3">
+              <label class="form-label" style="color: #555;">Id Transaksi</label>
+              <input type="text" id="onsiteId" class="form-control" readonly style="background: #e9ecef; border: 1px solid #ced4da; color: #555;">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" style="color: #555;">Tanggal</label>
+              <input type="date" id="onsiteDate" class="form-control" style="background: #fff; border: 1px solid #ced4da; color: #333;">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" style="color: #555;">Metode Bayar</label>
+              <select id="onsiteMethod" class="form-select" style="background: #fff; border: 1px solid #ced4da; color: #333;">
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" style="color: #555;">Status Bayar</label>
+              <select id="onsiteStatus" class="form-select" style="background: #fff; border: 1px solid #ced4da; color: #333;">
+                <option value="Lunas">Lunas</option>
+                <option value="Belum Lunas">Belum Lunas</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Container Daftar Pesanan -->
+          <div class="container-pesanan" style="margin-top: 1.5rem; padding: 1rem; border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">
+            <h6 style="color: #333; margin-bottom: 1rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem;">Daftar Pesanan</h6>
+            
+            <div class="table-responsive">
+              <table class="light-mode-table" style="width:100%; font-size:0.9rem;">
+                <thead>
+                  <tr>
+                    <th>Id Item</th>
+                    <th>Id Transaksi</th>
+                    <th>Nama Produk</th>
+                    <th style="text-align:right;">Harga</th>
+                    <th style="text-align:center;">Jml</th>
+                    <th style="text-align:right;">Total</th>
+                    <th style="text-align:center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="onsiteModalTableBody">
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="5" style="text-align:right;">TOTAL</td>
+                    <td id="onsiteModalGrandTotal" style="text-align:right;">Rp 0</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div id="onsiteModalEmptyMsg" style="text-align:center; color:#777; padding:1rem; font-style:italic;">
+              Belum ada pesanan. Klik tombol di bawah!
+            </div>
+
+            <button id="btnOpenMenuModal" class="btn-complete" style="background: #e97528; margin-top: 1rem;">
+              <i class="fas fa-plus"></i> Tambah Pesanan
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid #dee2e6;">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn" id="btnSaveOnsite" style="background: #e97528; color: white;">Simpan & Lanjut</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pilih Menu Onsite -->
+  <div class="modal fade" id="modalMenuOnsite" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content" style="background: #1a120c; border: 1px solid #c17c4a; color: #f8f1e9;">
+        <div class="modal-header" style="border-bottom: 1px solid #3a2a1f;">
+          <h5 class="modal-title" style="color: #e6b989;">Pilih Menu</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="onsiteMenuGrid" class="menu-grid">
+            <!-- Menu items will be loaded here -->
+            <p style="grid-column: 1/-1; text-align: center; color: #c9b29a;">Memuat menu...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Menu Onsite (Quantity) -->
+  <div class="modal fade" id="modalDetailOnsite" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background: #1a120c; border: 1px solid #c17c4a; color: #f8f1e9;">
+        <div class="modal-header" style="border-bottom: 1px solid #3a2a1f;">
+          <h5 class="modal-title" id="detailOnsiteTitle" style="color: #e6b989;">Nama Menu</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+          <img id="detailOnsiteImg" src="" alt="Menu" style="width: 150px; height: 150px; object-fit: cover; border-radius: 12px; margin-bottom: 1rem;">
+          <div id="detailOnsitePrice" style="font-size: 1.2rem; color: #e6b989; font-weight: bold;">Rp 0</div>
+          
+          <div class="quantity-control">
+            <button class="quantity-btn" id="btnQtyMinus">−</button>
+            <span class="quantity-display" id="detailOnsiteQty">1</span>
+            <button class="quantity-btn" id="btnQtyPlus">+</button>
+          </div>
+          
+          <button id="btnConfirmAddOnsite" class="btn-complete" style="background: #c17c4a;">Tambah ke Pesanan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS (untuk fungsi tab) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- JavaScript (tetap sama, tidak ada perubahan logika) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      try {
+        const { data, error } = await supabase.from('tabelprofil').select('nama_usaha, logo').limit(1).single();
+        
+        if (data) {
+          document.getElementById('navbarBusinessName').textContent = (data.nama_usaha || 'NERAI COFFEE').toUpperCase();
+          if (data.logo) {
+            const { data: publicData } = supabase.storage.from('aset').getPublicUrl(data.logo);
+            document.getElementById('navbarLogo').src = publicData.publicUrl;
+          }
+        }
+      } catch (err) {
+        console.error('Gagal memuat info usaha:', err);
+      }
+
+      const dateDisplay = document.getElementById('dateDisplay');
+      const now = new Date();
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      dateDisplay.textContent = now.toLocaleDateString('id-ID', options);
+
+      function updateClock() {
+        const now = new Date();
+        document.getElementById('clockDisplay').textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      const orderSelect = document.getElementById('orderSelect');
+      const orderDetailsForm = document.getElementById('orderDetailsForm');
+      const orderDetailBody = document.getElementById('orderDetailBody');
+      
+      const detailDate = document.getElementById('detailDate');
+      const detailName = document.getElementById('detailName');
+      const detailPhone = document.getElementById('detailPhone');
+      const detailEmail = document.getElementById('detailEmail');
+      const detailMethod = document.getElementById('detailMethod');
+      const detailProof = document.getElementById('detailProof');
+      const btnViewProof = document.getElementById('btnViewProof');
+      const btnCompleteOrder = document.getElementById('btnCompleteOrder');
+
+      // Variables for Onsite Transaction
+      let onsiteCart = [];
+      let menuItems = [];
+      let currentMenuItem = null;
+      let tempQty = 1;
+
+      let customersData = [];
+
+      async function fetchOrders() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const { data: customers, error } = await supabase
+          .from('tabelcustomer')
+          .select('*')
+          .eq('tanggal', today)
+          .order('id_order', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching orders:', error);
+          return;
+        }
+
+        customersData = customers || [];
+        checkNewOrders();
+        renderOrderDropdown();
+        loadAllOrderDetails();
+        updateDailyStats();
+      }
+
+      function checkNewOrders() {
+        const viewed = JSON.parse(localStorage.getItem('viewedOrders') || '[]');
+        // Hitung order yang ada di customersData tapi tidak ada di viewed
+        const newCount = customersData.filter(c => !viewed.includes(c.id_order)).length;
+        const badge = document.getElementById('orderBadge');
+        if (newCount > 0) {
+          badge.textContent = `${newCount} Baru`;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      function renderOrderDropdown() {
+        orderSelect.innerHTML = '<option value="">-- Pilih ID Order --</option>';
+
+        if (!customersData || customersData.length === 0) {
+          const option = document.createElement('option');
+          option.text = "Belum ada pesanan hari ini";
+          orderSelect.add(option);
+          orderSelect.disabled = true;
+          return;
+        }
+
+        orderSelect.disabled = false;
+        const viewed = JSON.parse(localStorage.getItem('viewedOrders') || '[]');
+        
+        customersData.forEach(customer => {
+          const option = document.createElement('option');
+          option.value = customer.id_order;
+          const isNew = !viewed.includes(customer.id_order);
+          option.textContent = `${customer.id_order} - ${customer.nama}${isNew ? ' (Baru 🔴)' : ''}`;
+          orderSelect.appendChild(option);
+        });
+      }
+
+      orderSelect.addEventListener('change', function() {
+        const selectedId = this.value;
+        if (!selectedId) {
+          orderDetailsForm.style.display = 'none';
+          loadAllOrderDetails();
+          btnCompleteOrder.disabled = true;
+          return;
+        }
+
+        // Mark as viewed
+        let viewed = JSON.parse(localStorage.getItem('viewedOrders') || '[]');
+        if (!viewed.includes(selectedId)) {
+          viewed.push(selectedId);
+          localStorage.setItem('viewedOrders', JSON.stringify(viewed));
+          
+          // Update badge count
+          checkNewOrders();
+          
+          // Update text option yang dipilih (hilangkan tanda baru)
+          const option = this.options[this.selectedIndex];
+          const customer = customersData.find(c => c.id_order === selectedId);
+          if (customer) {
+            option.textContent = `${customer.id_order} - ${customer.nama}`;
+          }
+        }
+
+        const customer = customersData.find(c => c.id_order === selectedId);
+        if (customer) {
+          detailDate.value = customer.tanggal;
+          detailName.value = customer.nama;
+          detailPhone.value = customer.tlp;
+          detailEmail.value = customer.email || '-';
+          detailMethod.value = customer.metode_bayar || '-';
+          
+          if (customer.bukti_bayar) {
+            detailProof.value = customer.bukti_bayar;
+            btnViewProof.href = customer.bukti_bayar;
+            btnViewProof.style.display = 'inline-flex';
+          } else {
+            detailProof.value = 'Tidak ada bukti';
+            btnViewProof.style.display = 'none';
+          }
+
+          orderDetailsForm.style.display = 'block';
+          btnCompleteOrder.disabled = false;
+
+          loadOrderDetails(selectedId);
+        }
+      });
+
+      async function loadOrderDetails(orderId) {
+        orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Memuat detail...</td></tr>';
+        document.getElementById('totalValue').textContent = '...';
+        
+        const { data: items, error } = await supabase.from('tabelorder').select('*').eq('id_order', orderId);
+
+        if (error || !items) {
+          orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff6b6b;">Gagal memuat detail.</td></tr>';
+          document.getElementById('totalValue').textContent = 'Rp 0';
+          return;
+        }
+
+        renderDetailTable(items);
+      }
+
+      async function loadAllOrderDetails() {
+        if (!customersData || customersData.length === 0) {
+          orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Belum ada pesanan hari ini.</td></tr>';
+          document.getElementById('totalValue').textContent = 'Rp 0';
+          return;
+        }
+
+        orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Memuat seluruh pesanan...</td></tr>';
+        document.getElementById('totalValue').textContent = '...';
+
+        const orderIds = customersData.map(c => c.id_order);
+        const { data: items, error } = await supabase.from('tabelorder').select('*').in('id_order', orderIds).order('id_item', { ascending: false });
+
+        if (error) {
+          orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff6b6b;">Gagal memuat detail.</td></tr>';
+          document.getElementById('totalValue').textContent = 'Rp 0';
+          return;
+        }
+        renderDetailTable(items);
+      }
+
+      function renderDetailTable(items) {
+        orderDetailBody.innerHTML = '';
+        let grandTotal = 0;
+        items.forEach(item => {
+          const itemTotal = Number(item.total);
+          grandTotal += itemTotal;
+          orderDetailBody.innerHTML += `<tr><td>${item.id_item}</td><td>${item.nama_produk}</td><td style="text-align:right;">Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}</td><td style="text-align:center;">${item.jumlah}</td><td style="text-align:right;">Rp ${itemTotal.toLocaleString('id-ID')}</td></tr>`;
+        });
+        
+        const totalEl = document.getElementById('totalValue');
+        if(totalEl) totalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+      }
+
+      btnCompleteOrder.addEventListener('click', async function() {
+        const selectedId = orderSelect.value;
+        if (!selectedId) return;
+
+        if (!confirm('Apakah anda yakin pesanan ini sudah selesai? Data akan dipindahkan ke laporan pemasukan.')) return;
+
+        const originalText = this.textContent;
+        this.textContent = 'Memproses...';
+        this.disabled = true;
+
+        try {
+          const { data: orderItems, error: itemsError } = await supabase
+            .from('tabelorder')
+            .select('total')
+            .eq('id_order', selectedId);
+          
+          if (itemsError) throw itemsError;
+
+          const totalBelanja = orderItems.reduce((sum, item) => sum + Number(item.total), 0);
+          
+          const customer = customersData.find(c => c.id_order === selectedId);
+          const namaCustomer = customer ? customer.nama : 'Unknown';
+
+          const { error: insertError } = await supabase
+            .from('tabel pemasukan sementara')
+            .insert([{
+              id_customer: selectedId,
+              nama: namaCustomer,
+              tanggal: customer ? customer.tanggal : null,
+              total: totalBelanja
+            }]);
+          
+          if (insertError) throw insertError;
+
+          const { error: delOrderError } = await supabase
+            .from('tabelorder')
+            .delete()
+            .eq('id_order', selectedId);
+          if (delOrderError) throw delOrderError;
+
+          const { error: delCustError } = await supabase
+            .from('tabelcustomer')
+            .delete()
+            .eq('id_order', selectedId);
+          if (delCustError) throw delCustError;
+
+          alert('Pesanan berhasil diselesaikan!');
+          
+          orderDetailsForm.style.display = 'none';
+          orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Silakan pilih ID Order di samping.</td></tr>';
+          document.getElementById('totalValue').textContent = 'Rp 0';
+          
+          fetchOrders();
+          
+        } catch (err) {
+          console.error('Error completing order:', err);
+          alert('Gagal menyelesaikan pesanan: ' + err.message);
+        } finally {
+          this.textContent = originalText;
+        }
+      });
+
+      async function updateDailyStats() {
+        const incomeDisplay = document.getElementById('dailyIncomeDisplay');
+        const transactionCountDisplay = document.getElementById('totalTransactionsDisplay');
+        const summaryTableBody = document.getElementById('summaryTableBody');
+
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear().toString().slice(-2);
+        const prefix = `NIC-${day}${month}${year}`;
+        
+        const { data, error } = await supabase
+          .from('tabel pemasukan sementara')
+          .select('*')
+          .ilike('id_customer', prefix + '%')
+          .order('id_customer', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching stats:', error);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          incomeDisplay.textContent = 'Rp 0';
+          transactionCountDisplay.textContent = '0';
+          summaryTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Belum ada transaksi selesai hari ini.</td></tr>';
+          return;
+        }
+
+        let grandTotal = 0;
+        summaryTableBody.innerHTML = '';
+
+        data.forEach((item, index) => {
+          const t = Number(item.total);
+          grandTotal += t;
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td style="text-align:center;">${index + 1}</td>
+            <td>${item.id_customer}</td>
+            <td>${item.tanggal || '-'}</td>
+            <td>${item.nama}</td>
+            <td style="text-align:right;">Rp ${t.toLocaleString('id-ID')}</td>
+          `;
+          summaryTableBody.appendChild(row);
+        });
+
+        incomeDisplay.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+        transactionCountDisplay.textContent = data.length;
+      }
+
+      const btnClosingDay = document.getElementById('btnClosingDay');
+      if (btnClosingDay) {
+        btnClosingDay.addEventListener('click', async function() {
+          if (!confirm('Apakah Anda yakin ingin melakukan Closing Day?\n\nSemua data transaksi akan dipindahkan ke Laporan Pemasukan, dan data pesanan aktif akan dihapus.')) return;
+
+          const originalText = this.textContent;
+          this.textContent = 'Memproses...';
+          this.disabled = true;
+
+          try {
+            const { data: tempData, error: fetchError } = await supabase
+              .from('tabel pemasukan sementara')
+              .select('*');
+            
+            if (fetchError) throw fetchError;
+
+            if (tempData && tempData.length > 0) {
+              // Cek ID yang duplikat di tabel pemasukan
+              const idsToCheck = tempData.map(t => t.id_customer);
+              const { data: existingData, error: checkError } = await supabase
+                .from('pemasukan')
+                .select('id_transaksi')
+                .in('id_transaksi', idsToCheck);
+
+              if (checkError) throw checkError;
+
+              const existingIds = new Set(existingData ? existingData.map(e => e.id_transaksi) : []);
+
+              const finalData = tempData.map(item => {
+                let finalId = item.id_customer;
+                // Jika ID sudah ada, tambahkan 3 angka random
+                if (existingIds.has(finalId)) {
+                  const random3 = Math.floor(Math.random() * 900) + 100;
+                  finalId = `${finalId}-${random3}`;
+                }
+                return {
+                  id_transaksi: finalId,
+                  tanggal: item.tanggal,
+                  nama_customer: item.nama,
+                  total_belanja: item.total
+                };
+              });
+
+              const { error: insertError } = await supabase
+                .from('pemasukan')
+                .insert(finalData);
+
+              if (insertError) throw insertError;
+            }
+
+            const { error: deleteTempError } = await supabase.from('tabel pemasukan sementara').delete().neq('id_customer', '0');
+            if (deleteTempError) throw deleteTempError;
+
+            const { error: deleteCustError } = await supabase.from('tabelcustomer').delete().neq('id_order', '0');
+            if (deleteCustError) throw deleteCustError;
+
+            alert('Closing Day Berhasil! Data telah diamankan.');
+            fetchOrders();
+          } catch (err) {
+            console.error('Error closing day:', err);
+            alert('Gagal melakukan Closing Day: ' + err.message);
+          } finally {
+            this.textContent = originalText;
+            this.disabled = false;
+          }
+        });
+      }
+
+      // Event Listener Tombol Refresh
+      const btnRefresh = document.getElementById('btnRefresh');
+      if (btnRefresh) {
+        btnRefresh.addEventListener('click', async function() {
+          const originalHtml = this.innerHTML;
+          this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+          this.disabled = true;
+          await Promise.all([fetchOrders(), fetchOnsiteOrders()]);
+          this.innerHTML = originalHtml;
+          this.disabled = false;
+        });
+      }
+
+      // Event Listener Tombol Refresh Onsite
+      const btnRefreshOnsite = document.getElementById('btnRefreshOnsite');
+      if (btnRefreshOnsite) {
+        btnRefreshOnsite.addEventListener('click', async function() {
+          const originalHtml = this.innerHTML;
+          this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+          this.disabled = true;
+          await Promise.all([fetchOrders(), fetchOnsiteOrders()]);
+          this.innerHTML = originalHtml;
+          this.disabled = false;
+        });
+      }
+
+      // Event Listener Tombol Tambah Transaksi Onsite
+      const btnAddOnsite = document.getElementById('btnAddOnsite');
+      if (btnAddOnsite) {
+        btnAddOnsite.addEventListener('click', function() {
+          const now = new Date();
+          const day = String(now.getDate()).padStart(2, '0');
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const year = now.getFullYear().toString().slice(-2);
+          const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          
+          document.getElementById('onsiteId').value = `ONS-${day}${month}${year}-${random}`;
+          document.getElementById('onsiteDate').value = now.toISOString().split('T')[0];
+          
+          const modal = new bootstrap.Modal(document.getElementById('modalAddOnsite'));
+          modal.show();
+        });
+      }
+
+      // Fetch Payment Methods for Onsite Modal
+      async function fetchPaymentMethodsForOnsite() {
+        const select = document.getElementById('onsiteMethod');
+        // Reset options, ensure Cash is first
+        select.innerHTML = '<option value="Cash">Cash</option>';
+
+        try {
+          const { data, error } = await supabase
+            .from('tabelrekening')
+            .select('nama_bank')
+            .order('nama_bank', { ascending: true });
+
+          if (error) throw error;
+
+          if (data) {
+            data.forEach(bank => {
+              const option = document.createElement('option');
+              option.value = bank.nama_bank;
+              option.textContent = bank.nama_bank;
+              select.appendChild(option);
+            });
+          }
+        } catch (err) {
+          console.error('Gagal memuat metode pembayaran:', err);
+        }
+      }
+
+      // === LOGIKA MENU & CART ONSITE ===
+
+      // 1. Fetch Menu Data
+      async function fetchMenu() {
+        try {
+          const { data, error } = await supabase
+            .from('tabelmenu')
+            .select('id, nama_menu, harga, photo')
+            .order('nama_menu', { ascending: true });
+
+          if (error) throw error;
+          
+          if (data) {
+            menuItems = data.map(item => {
+              let imgUrl = 'https://via.placeholder.com/150?text=No+Image';
+              if (item.photo) {
+                const { data: publicData } = supabase.storage.from('aset').getPublicUrl(item.photo);
+                imgUrl = publicData.publicUrl;
+              }
+              return { ...item, imgUrl };
+            });
+          }
+        } catch (err) {
+          console.error('Gagal memuat menu:', err);
+        }
+      }
+
+      // 2. Render Menu Grid
+      function renderMenuGrid() {
+        const grid = document.getElementById('onsiteMenuGrid');
+        grid.innerHTML = '';
+
+        if (menuItems.length === 0) {
+          grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #c9b29a;">Tidak ada menu tersedia.</p>';
+          return;
+        }
+
+        menuItems.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'menu-item';
+          div.innerHTML = `
+            <img src="${item.imgUrl}" class="menu-thumb" alt="${item.nama_menu}">
+            <div class="menu-name">${item.nama_menu}</div>
+            <div class="menu-price">Rp ${Number(item.harga).toLocaleString('id-ID')}</div>
+          `;
+          div.onclick = () => openDetailModal(item);
+          grid.appendChild(div);
+        });
+      }
+
+      // 3. Open Detail Modal
+      const modalMenuOnsite = new bootstrap.Modal(document.getElementById('modalMenuOnsite'));
+      const modalDetailOnsite = new bootstrap.Modal(document.getElementById('modalDetailOnsite'));
+
+      function openDetailModal(item) {
+        currentMenuItem = item;
+        tempQty = 1;
+        
+        document.getElementById('detailOnsiteTitle').textContent = item.nama_menu;
+        document.getElementById('detailOnsiteImg').src = item.imgUrl;
+        document.getElementById('detailOnsitePrice').textContent = `Rp ${Number(item.harga).toLocaleString('id-ID')}`;
+        document.getElementById('detailOnsiteQty').textContent = tempQty;
+
+        // Tumpuk modal: Menu tetap terbuka di belakang, atau tutup menu dulu?
+        // Bootstrap 5 mendukung tumpuk, tapi backdropnya double. 
+        // Kita biarkan menu terbuka di belakang (stacked).
+        modalDetailOnsite.show();
+      }
+
+      // 4. Quantity Logic
+      document.getElementById('btnQtyMinus').onclick = () => {
+        if (tempQty > 1) {
+          tempQty--;
+          document.getElementById('detailOnsiteQty').textContent = tempQty;
+        }
+      };
+      document.getElementById('btnQtyPlus').onclick = () => {
+        tempQty++;
+        document.getElementById('detailOnsiteQty').textContent = tempQty;
+      };
+
+      // 5. Confirm Add to Cart
+      document.getElementById('btnConfirmAddOnsite').onclick = () => {
+        if (!currentMenuItem) return;
+
+        const existingItem = onsiteCart.find(i => i.id === currentMenuItem.id);
+        if (existingItem) {
+          existingItem.qty += tempQty;
+          existingItem.total = existingItem.qty * existingItem.harga;
+        } else {
+          onsiteCart.push({
+            id: currentMenuItem.id,
+            name: currentMenuItem.nama_menu,
+            harga: Number(currentMenuItem.harga),
+            qty: tempQty,
+            total: Number(currentMenuItem.harga) * tempQty
+          });
+        }
+
+        renderOnsiteCartTable();
+        modalDetailOnsite.hide();
+        modalMenuOnsite.hide(); // Tutup menu juga agar user melihat tabel terupdate
+      };
+
+      // 6. Render Cart Table in Main Modal
+      function renderOnsiteCartTable() {
+        const tbody = document.getElementById('onsiteModalTableBody');
+        const grandTotalEl = document.getElementById('onsiteModalGrandTotal');
+        const emptyMsg = document.getElementById('onsiteModalEmptyMsg');
+        const onsiteId = document.getElementById('onsiteId').value;
+
+        tbody.innerHTML = '';
+        let grandTotal = 0;
+
+        if (onsiteCart.length === 0) {
+          emptyMsg.style.display = 'block';
+          grandTotalEl.textContent = 'Rp 0';
+          return;
+        }
+
+        emptyMsg.style.display = 'none';
+
+        onsiteCart.forEach((item, index) => {
+          grandTotal += item.total;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${onsiteId}.${index + 1}</td>
+            <td>${onsiteId}</td>
+            <td>${item.name}</td>
+            <td style="text-align:right;">Rp ${item.harga.toLocaleString('id-ID')}</td>
+            <td style="text-align:center;">${item.qty}</td>
+            <td style="text-align:right;">Rp ${item.total.toLocaleString('id-ID')}</td>
+            <td style="text-align:center;">
+              <button class="btn-action-outline" style="border:none; color:#ff6b6b;" onclick="removeOnsiteItem(${index})">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        grandTotalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+      }
+
+      // Expose remove function to global scope (simple way for onclick in HTML string)
+      window.removeOnsiteItem = function(index) {
+        onsiteCart.splice(index, 1);
+        renderOnsiteCartTable();
+      };
+
+      // Event Listener: Buka Modal Menu
+      const btnOpenMenuModal = document.getElementById('btnOpenMenuModal');
+      if (btnOpenMenuModal) {
+        btnOpenMenuModal.addEventListener('click', () => {
+          renderMenuGrid();
+          modalMenuOnsite.show();
+        });
+      }
+
+      // === LOGIKA SIMPAN TRANSAKSI ONSITE ===
+      const btnSaveOnsite = document.getElementById('btnSaveOnsite');
+      if (btnSaveOnsite) {
+        btnSaveOnsite.addEventListener('click', async function() {
+          const idTransaksi = document.getElementById('onsiteId').value;
+          const tanggal = document.getElementById('onsiteDate').value;
+          const metodeBayar = document.getElementById('onsiteMethod').value;
+          const status = document.getElementById('onsiteStatus').value;
+
+          if (!idTransaksi || !tanggal) {
+            alert('Mohon lengkapi data transaksi (ID dan Tanggal).');
+            return;
+          }
+
+          if (onsiteCart.length === 0) {
+            alert('Daftar pesanan masih kosong. Silakan tambah menu terlebih dahulu.');
+            return;
+          }
+
+          const originalText = this.textContent;
+          this.textContent = 'Menyimpan...';
+          this.disabled = true;
+
+          try {
+            // 1. Simpan Identitas ke tabel customeronsite
+            const { error: custError } = await supabase
+              .from('customeronsite')
+              .insert([{
+                id_transaksi: idTransaksi,
+                tanggal: tanggal,
+                metode_bayar: metodeBayar,
+                status: status
+              }]);
+
+            if (custError) throw custError;
+
+            // 2. Simpan Item Pesanan ke tabel pemasukanonsitesementara
+            const itemsToInsert = onsiteCart.map((item, index) => ({
+              id_item: `${idTransaksi}.${index + 1}`,
+              id_transaksi: idTransaksi,
+              nama_produk: item.name,
+              harga: item.harga,
+              jumlah: item.qty,
+              total: item.total
+            }));
+
+            const { error: itemsError } = await supabase
+              .from('pemasukanonsitesementara')
+              .insert(itemsToInsert);
+
+            if (itemsError) throw itemsError;
+
+            alert('Data Transaksi On Site berhasil disimpan!');
+            
+            // Tutup Modal & Reset
+            const modalEl = document.getElementById('modalAddOnsite');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+
+            onsiteCart = [];
+            renderOnsiteCartTable();
+            fetchOnsiteOrders();
+
+          } catch (err) {
+            console.error('Gagal menyimpan transaksi onsite:', err);
+            alert('Gagal menyimpan data: ' + err.message);
+          } finally {
+            this.textContent = originalText;
+            this.disabled = false;
+          }
+        });
+      }
+
+      // === LOGIKA FETCH DATA ONSITE (TAB TRANSAKSI ON SITE) ===
+      let onsiteTransactions = [];
+
+      async function fetchOnsiteOrders() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Ambil daftar transaksi dari customeronsite
+        const { data, error } = await supabase
+          .from('customeronsite')
+          .select('*')
+          .eq('tanggal', today)
+          .order('id_transaksi', { ascending: false });
+
+        if (error) {
+          console.error('Gagal memuat transaksi onsite:', error);
+          return;
+        }
+
+        onsiteTransactions = data || [];
+        renderOnsiteDropdown();
+        updateOnsiteStats();
+        loadAllOnsiteDetails();
+      }
+
+      function renderOnsiteDropdown() {
+        const select = document.getElementById('onsiteOrderSelect');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">-- Pilih ID Transaksi --</option>';
+
+        if (onsiteTransactions.length === 0) {
+          const opt = document.createElement('option');
+          opt.text = "Belum ada transaksi hari ini";
+          select.add(opt);
+          select.disabled = true;
+          return;
+        }
+
+        select.disabled = false;
+        onsiteTransactions.forEach(trx => {
+          const opt = document.createElement('option');
+          opt.value = trx.id_transaksi;
+          opt.textContent = `${trx.id_transaksi} (${trx.status})`;
+          select.appendChild(opt);
+        });
+      }
+
+      async function updateOnsiteStats() {
+        const summaryBody = document.getElementById('onsiteSummaryTableBody');
+        const totalTrxEl = document.getElementById('totalTransactionsOnsite');
+        const incomeEl = document.getElementById('dailyIncomeOnsite');
+
+        // Data di customeronsite adalah pesanan AKTIF (belum selesai).
+        // Jadi tidak ditampilkan di Ringkasan Transaksi (yang untuk pesanan selesai).
+        if(summaryBody) {
+          summaryBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Belum ada transaksi selesai hari ini.</td></tr>';
+        }
+
+        if(totalTrxEl) totalTrxEl.textContent = '0';
+        if(incomeEl) incomeEl.textContent = 'Rp 0';
+      }
+
+      async function loadAllOnsiteDetails() {
+        const tbody = document.getElementById('onsiteOrderDetailBody');
+        const totalEl = document.getElementById('onsiteTotalValue');
+        const detailsForm = document.getElementById('onsiteDetailsForm');
+        const btnComplete = document.getElementById('btnCompleteOnsite');
+
+        if (detailsForm) detailsForm.style.display = 'none';
+        if (btnComplete) btnComplete.disabled = true;
+
+        if (onsiteTransactions.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Belum ada transaksi onsite hari ini.</td></tr>';
+          totalEl.textContent = 'Rp 0';
+          return;
+        }
+
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Memuat seluruh pesanan...</td></tr>';
+        totalEl.textContent = '...';
+
+        const ids = onsiteTransactions.map(t => t.id_transaksi);
+        const { data: items, error } = await supabase
+          .from('pemasukanonsitesementara')
+          .select('*')
+          .in('id_transaksi', ids)
+          .order('id_item', { ascending: false });
+
+        if (error) {
+          console.error('Error loading all onsite details:', error);
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff6b6b;">Gagal memuat data.</td></tr>';
+          totalEl.textContent = 'Rp 0';
+          return;
+        }
+
+        renderOnsiteDetailTable(items);
+      }
+
+      function renderOnsiteDetailTable(items) {
+        const tbody = document.getElementById('onsiteOrderDetailBody');
+        const totalEl = document.getElementById('onsiteTotalValue');
+        
+        if (!items || items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Tidak ada item pesanan.</td></tr>';
+          totalEl.textContent = 'Rp 0';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        let grandTotal = 0;
+        items.forEach(item => {
+          const t = Number(item.total);
+          grandTotal += t;
+          tbody.innerHTML += `
+            <tr>
+              <td>${item.id_item}</td>
+              <td>${item.nama_produk}</td>
+              <td style="text-align:right;">Rp ${Number(item.harga).toLocaleString('id-ID')}</td>
+              <td style="text-align:center;">${item.jumlah}</td>
+              <td style="text-align:right;">Rp ${t.toLocaleString('id-ID')}</td>
+            </tr>
+          `;
+        });
+        totalEl.textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+      }
+
+      // Event Listener Dropdown Onsite
+      const onsiteOrderSelect = document.getElementById('onsiteOrderSelect');
+      if (onsiteOrderSelect) {
+        onsiteOrderSelect.addEventListener('change', async function() {
+          const selectedId = this.value;
+          const detailsForm = document.getElementById('onsiteDetailsForm');
+          const tbody = document.getElementById('onsiteOrderDetailBody');
+          const totalEl = document.getElementById('onsiteTotalValue');
+          const btnComplete = document.getElementById('btnCompleteOnsite');
+
+          if (!selectedId) {
+            loadAllOnsiteDetails();
+            return;
+          }
+
+          const trx = onsiteTransactions.find(t => t.id_transaksi === selectedId);
+          if (trx) {
+            detailsForm.style.display = 'block';
+              document.getElementById('onsiteDetailId').value = trx.id_transaksi;
+              document.getElementById('onsiteDetailDate').value = trx.tanggal;
+              document.getElementById('onsiteDetailMethod').value = trx.metode_bayar || '-';
+              document.getElementById('onsiteDetailStatus').value = trx.status || '-';
+            btnComplete.disabled = false;
+          }
+
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Memuat detail...</td></tr>';
+          
+          const { data: items, error } = await supabase
+            .from('pemasukanonsitesementara')
+            .select('*')
+            .eq('id_transaksi', selectedId);
+
+          if (error) {
+            console.error('Error detail onsite:', error);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff6b6b;">Gagal memuat data.</td></tr>';
+            return;
+          }
+
+          renderOnsiteDetailTable(items);
+        });
+      }
+
+      // Event Listener Tombol Pesanan Selesai (Onsite)
+      const btnCompleteOnsite = document.getElementById('btnCompleteOnsite');
+      if (btnCompleteOnsite) {
+        btnCompleteOnsite.addEventListener('click', async function() {
+          const selectedId = document.getElementById('onsiteOrderSelect').value;
+          if (!selectedId) return;
+
+          if (!confirm('Apakah transaksi ini sudah selesai? Data akan dipindahkan ke laporan pemasukan.')) return;
+
+          const originalText = this.textContent;
+          this.textContent = 'Memproses...';
+          this.disabled = true;
+
+          try {
+            // 1. Ambil total dari pemasukanonsitesementara
+            const { data: items, error: itemsError } = await supabase
+              .from('pemasukanonsitesementara')
+              .select('total')
+              .eq('id_transaksi', selectedId);
+            
+            if (itemsError) throw itemsError;
+            const totalBelanja = items.reduce((sum, item) => sum + Number(item.total), 0);
+            
+            // 2. Ambil tanggal dari customeronsite
+            const { data: custData, error: custError } = await supabase
+              .from('customeronsite')
+              .select('tanggal')
+              .eq('id_transaksi', selectedId)
+              .single();
+            if (custError) throw custError;
+
+            // 3. Simpan ke tabel pemasukan
+            const { error: insertError } = await supabase
+              .from('pemasukan')
+              .insert([{
+                id_transaksi: selectedId,
+                tanggal: custData.tanggal,
+                nama_customer: 'Onsite',
+                total_belanja: totalBelanja
+              }]);
+            if (insertError) throw insertError;
+
+            // 4. Hapus data sementara
+            await supabase.from('pemasukanonsitesementara').delete().eq('id_transaksi', selectedId);
+            await supabase.from('customeronsite').delete().eq('id_transaksi', selectedId);
+
+            alert('Transaksi Onsite Selesai!');
+            document.getElementById('onsiteDetailsForm').style.display = 'none';
+            document.getElementById('onsiteOrderDetailBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Silakan pilih ID Transaksi di samping.</td></tr>';
+            document.getElementById('onsiteTotalValue').textContent = 'Rp 0';
+            fetchOnsiteOrders();
+
+          } catch (err) {
+            console.error('Error completing onsite:', err);
+            alert('Gagal: ' + err.message);
+          } finally {
+            this.textContent = originalText;
+            this.disabled = false;
+          }
+        });
+      }
+
+      // Load menu on startup
+      fetchMenu();
+      fetchPaymentMethodsForOnsite();
+      fetchOrders();
+      fetchOnsiteOrders();
+    });
+  </script>
+</body>
+</html>

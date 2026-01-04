@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profil Usaha - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #422002;
+      color: #f8f1e9;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,5,3,0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #251a12;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #e6b989;
+    }
+
+    /* ================== MAIN CONTENT ================== */
+    .profile-page {
+      padding: 100px 2rem 4rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .profile-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-edit-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-logo {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 4px solid #c17c4a;
+      box-shadow: 0 8px 25px rgba(193,124,74,0.3);
+      transition: transform 0.2s;
+    }
+
+    .edit-icon {
+      position: absolute;
+      bottom: -12px;
+      right: -12px;
+      background: #c17c4a;
+      color: white;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: all 0.25s ease;
+      font-size: 1rem;
+      border: 2px solid #0a0503;
+    }
+
+    .edit-icon:hover {
+      background: #d18f5e;
+      transform: scale(1.12);
+      box-shadow: 0 6px 18px rgba(193,124,74,0.5);
+    }
+
+    h1 {
+      color: #ffffff;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #c9b29a;
+      font-size: 1.1rem;
+    }
+
+    .form-container {
+      background: #000000;
+      border-radius: 16px;
+      padding: 2.5rem;
+      border: 1px solid #774929;
+      box-shadow: 0 6px 20px rgba(255, 254, 254, 0.4);
+    }
+
+    .form-group {
+      margin-bottom: 1.6rem;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.6rem;
+      color: #c9b29a;
+      font-weight: 500;
+      font-size: 1.05rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      padding-right: 3rem;
+      border: none;
+      border-radius: 8px;
+      background: #251a12;
+      color: #f8f1e9;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(185, 116, 67, 0.4);
+    }
+
+    .form-group input[readonly] {
+      background: #1e1510;
+      color: #c17c4a;
+      cursor: default;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 38px;
+      cursor: pointer;
+      color: #c9b29a;
+      font-size: 1.2rem;
+      transition: color 0.2s;
+    }
+
+    .password-toggle:hover {
+      color: #e6b989;
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #3a2a1f;
+      color: #c9b29a;
+    }
+
+    .btn-primary:hover {
+      background: #a1dc43;
+      color: #0f0800;
+    }
+
+    .btn-secondary {
+      background: #3a2a1f;
+      color: #c9b29a;
+    }
+
+    .btn-secondary:hover {
+      background: #a1dc43;
+      color: #0f0800;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar dinamis -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="profile-page">
+
+    <div class="profile-header">
+      <div class="logo-edit-wrapper">
+        <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=800" 
+             alt="Logo Nerai Coffee" 
+             class="profile-logo" 
+             id="profileLogoPreview">
+
+        <label for="logoInput" class="edit-icon">
+          <i class="fas fa-pencil-alt"></i>
+        </label>
+
+        <input type="file" id="logoInput" accept="image/*" style="display: none;">
+      </div>
+
+      <h1>Profil Usaha</h1>
+      <p class="subtitle">Kelola informasi bisnis Anda</p>
+    </div>
+
+    <div class="form-container">
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="businessName">Nama Usaha</label>
+          <input type="text" id="businessName" value="Nerai Coffee" required>
+        </div>
+
+        <div class="form-group">
+          <label for="nib">NIB (Nomor Induk Berusaha)</label>
+          <input type="text" id="nib" value="9123456789001" placeholder="Contoh: 9123456789001">
+        </div>
+
+        <div class="form-group">
+          <label for="owner">Nama Owner</label>
+          <input type="text" id="owner" value="Budi Santoso" required>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Alamat Lengkap</label>
+          <input type="text" id="address" value="Jl. Sudirman No.45, Jakarta Selatan" required>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Nomor Telepon</label>
+          <input type="tel" id="phone" value="0812-3456-7890" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Usaha</label>
+          <input type="email" id="email" value="hello@neraicoffee.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="username">Username Admin</label>
+          <input type="text" id="username" value="admin_nerai" required>
+        </div>
+
+        <!-- Password dengan icon mata & di-load dari database -->
+        <div class="form-group">
+          <label for="password">Password Baru (kosongkan jika tidak ingin ubah)</label>
+          <input type="password" id="password" placeholder="••••••••">
+          <i class="fas fa-eye-slash password-toggle" id="togglePassword"></i>
+        </div>
+
+        <div class="form-group">
+          <label for="logoFileName">Logo</label>
+          <input type="text" id="logoFileName" readonly 
+                 placeholder="Pilih logo melalui icon pensil di atas" 
+                 value="">
+        </div>
+
+        <div id="statusMessage" style="color:#c17c4a; text-align:center; margin-top:1rem; display:none;"></div>
+
+        <div class="form-buttons">
+          <button type="button" class="btn btn-secondary" onclick="window.location.href='dashboard.html'">Kembali ke Dashboard</button>
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const logoInput = document.getElementById('logoInput');
+    const logoPreview = document.getElementById('profileLogoPreview');
+    const navbarLogo = document.getElementById('navbarLogo');
+    const logoFileName = document.getElementById('logoFileName');
+    const navbarBusinessName = document.getElementById('navbarBusinessName');
+
+    // Preview logo baru
+    if (logoInput) {
+      logoInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            logoPreview.src = e.target.result;
+            navbarLogo.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+          logoFileName.value = file.name;
+        }
+      });
+    }
+
+    // Toggle password visibility
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.classList.toggle('fa-eye-slash');
+        this.classList.toggle('fa-eye');
+      });
+    }
+
+    // Supabase config
+    const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const TABLE_NAME = 'tabelprofil';
+    const BUCKET_NAME = 'aset';
+
+    const form = document.getElementById('profileForm');
+    const statusMessage = document.getElementById('statusMessage');
+
+    let currentProfileId = null;
+
+    // Load data profil dari Supabase
+    async function loadProfile() {
+      try {
+        const { data, error } = await supabase
+          .from(TABLE_NAME)
+          .select('*')
+          .limit(1)
+          .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        if (data) {
+          currentProfileId = data.id;
+
+          const namaUsaha = data.nama_usaha || 'NERAI COFFEE';
+
+          document.getElementById('businessName').value = namaUsaha;
+          document.getElementById('nib').value = data.nib || '';
+          document.getElementById('owner').value = data.owner || '';
+          document.getElementById('address').value = data.alamat || '';
+          document.getElementById('phone').value = data.tlp || '';
+          document.getElementById('email').value = data.email || '';
+          document.getElementById('username').value = data.username || '';
+
+          // === BARU: Load password dari database ===
+          if (data.password) {
+            passwordInput.value = data.password;
+          } else {
+            passwordInput.value = ''; // kosong jika belum ada
+          }
+
+          navbarBusinessName.textContent = namaUsaha.toUpperCase();
+
+          if (data.logo) {
+            const { data: publicData } = supabase.storage
+              .from(BUCKET_NAME)
+              .getPublicUrl(data.logo);
+
+            const logoUrl = publicData.publicUrl;
+
+            logoPreview.src = logoUrl;
+            navbarLogo.src = logoUrl;
+            logoFileName.value = data.logo;
+          }
+        }
+      } catch (err) {
+        console.error('Gagal memuat data profil:', err);
+      }
+    }
+
+    // Simpan perubahan
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      statusMessage.textContent = 'Menyimpan...';
+      statusMessage.style.display = 'block';
+      statusMessage.style.color = '#c17c4a';
+
+      try {
+        let logoPath = null;
+        const selectedFile = logoInput.files[0];
+
+        if (selectedFile) {
+          const ext = selectedFile.name.split('.').pop();
+          const fileName = `${Date.now()}.${ext}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(fileName, selectedFile, { upsert: true });
+
+          if (uploadError) throw uploadError;
+
+          logoPath = fileName;
+        }
+
+        const dataToSave = {
+          nama_usaha: document.getElementById('businessName').value.trim(),
+          nib: document.getElementById('nib').value.trim(),
+          owner: document.getElementById('owner').value.trim(),
+          alamat: document.getElementById('address').value.trim(),
+          tlp: document.getElementById('phone').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          username: document.getElementById('username').value.trim()
+        };
+
+        // Hanya simpan password jika diisi
+        const pwd = passwordInput.value.trim();
+        if (pwd) {
+          dataToSave.password = pwd;
+        }
+
+        if (logoPath) dataToSave.logo = logoPath;
+
+        let error;
+        if (currentProfileId) {
+          ({ error } = await supabase
+            .from(TABLE_NAME)
+            .update(dataToSave)
+            .eq('id', currentProfileId));
+        } else {
+          ({ error } = await supabase
+            .from(TABLE_NAME)
+            .insert([dataToSave]));
+        }
+
+        if (error) throw error;
+
+        statusMessage.textContent = 'Berhasil disimpan!';
+        statusMessage.style.color = '#a1dc43';
+
+        await loadProfile(); // reload termasuk password terbaru
+
+        setTimeout(() => statusMessage.style.display = 'none', 3000);
+
+      } catch (err) {
+        console.error('Gagal menyimpan:', err);
+        statusMessage.textContent = 'Gagal: ' + (err.message || 'Terjadi kesalahan');
+        statusMessage.style.color = '#ff6b6b';
+      }
+    });
+
+    // Load saat halaman dibuka
+    loadProfile();
+  });
+</script>
+
+</body>
+</html>

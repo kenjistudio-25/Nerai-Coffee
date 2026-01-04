@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kelola Menu - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #6f827c;
+      color: #f8f1e9;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,5,3,0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #251a12;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* ================== MAIN CONTENT ================== */
+    .container {
+      padding: 100px 2rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #fffefd;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.8rem 1.5rem;
+      border: 1px solid #5c4030;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: all 0.2s;
+      background: #3a2a1f;
+      color: #c9b29a;
+    }
+
+    .btn:hover {
+      background: #e6b989;
+      color: #1a120c;
+      border-color: #e6b989;
+      transform: translateY(-2px);
+    }
+
+    /* ================== TABLE ================== */
+    .table-container {
+      background: #1a120c;
+      border-radius: 12px;
+      overflow-x: auto;
+      border: 1px solid #3a2a1f;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #3a2a1f;
+    }
+
+    th {
+      background: #251a12;
+      color: #e6b989;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    tr:hover {
+      background: rgba(193, 124, 74, 0.05);
+    }
+
+    .action-icons {
+      display: flex;
+      gap: 0.8rem;
+      justify-content: center;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: transform 0.2s;
+    }
+
+    .icon-btn.edit { color: #e6b989; }
+    .icon-btn.delete { color: #ff6b6b; }
+
+    .icon-btn:hover { transform: scale(1.2); }
+
+    .menu-thumb-table {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #c17c4a;
+    }
+
+    @media (max-width: 768px) {
+      .action-bar { flex-direction: column; align-items: stretch; }
+      .btn-group { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: #1a120c;
+      padding: 2rem;
+      border: 1px solid #3a2a1f;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      color: #c9b29a;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close:hover { color: #e6b989; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #c9b29a; }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 0.8rem;
+      background: #251a12;
+      border: 1px solid #3a2a1f;
+      border-radius: 6px;
+      color: #f8f1e9;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: #c17c4a;
+    }
+
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* Tombol aksi di samping input */
+    .hpp-action-buttons {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .hpp-action-buttons button {
+      width: 46px;
+      height: 46px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid #3a2a1f;
+    }
+    .hpp-action-buttons .add-btn {
+      background: #c17c4a;
+      color: white;
+    }
+    .hpp-action-buttons .add-btn:hover {
+      background: #e6b989;
+    }
+    .hpp-action-buttons .edit-btn, .hpp-action-buttons .delete-btn {
+      background: #251a12;
+      color: #5c4030;
+    }
+    .hpp-action-buttons .edit-btn.enabled { color: #e6b989; }
+    .hpp-action-buttons .delete-btn.enabled { color: #ff6b6b; }
+    .hpp-action-buttons .edit-btn.enabled:hover, .hpp-action-buttons .delete-btn.enabled:hover {
+      background: rgba(193, 124, 74, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1>Kelola Daftar Menu Dan Harga</h1>
+
+    <div class="action-bar">
+      <div class="btn-group">
+        <button class="btn btn-primary" id="addMenuBtn">
+          <i class="fas fa-plus"></i> Tambah Menu
+        </button>
+        <button class="btn btn-secondary">
+          <i class="fas fa-file-export"></i> Export
+        </button>
+        <button class="btn btn-secondary" onclick="window.location.reload()">
+          <i class="fas fa-sync-alt"></i> Reset
+        </button>
+      </div>
+      
+      <a href="dashboard.html" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> Kembali Ke Dashboard
+      </a>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 60px; text-align: center;">No</th>
+            <th>Nama Menu</th>
+            <th>Deskripsi</th>
+            <th>Harga</th>
+            <th>Gambar</th>
+            <th style="width: 100px; text-align: center;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="menuTableBody">
+          <!-- Data akan dimuat dari Supabase -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Tambah/Edit Menu -->
+  <div id="menuModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 style="color: #e6b989; margin-bottom: 1.5rem; text-align: center;">Form Menu</h2>
+      
+      <form id="menuForm">
+        <div class="form-group">
+          <label for="menuName">Nama Produk</label>
+          <input type="text" id="menuName" placeholder="Contoh: Kopi Susu" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="menuDesc">Deskripsi</label>
+          <textarea id="menuDesc" rows="3" placeholder="Deskripsi singkat..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="menuPrice">Harga (Rp)</label>
+          <div style="display: flex; gap: 10px;">
+            <input type="number" id="menuPrice" placeholder="Contoh: 25000" required style="flex: 1;">
+            <button type="button" class="btn btn-secondary" style="width: auto; padding: 0.8rem;" title="Hitung HPP">
+              <i class="fas fa-calculator"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="menuPhoto">Photo</label>
+          <input type="file" id="menuPhoto" accept="image/*">
+          <img id="imagePreview" src="" alt="Preview" style="display: none; width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid #3a2a1f; max-height: 200px; object-fit: cover;">
+        </div>
+        
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="button" class="btn btn-primary" id="btnSave" style="flex: 1; justify-content: center;">Tambah Menu</button>
+          <button type="button" class="btn" id="btnUpdate" style="background: #c17c4a; color: white; border:none; flex: 1; justify-content: center;">Update</button>
+          <button type="button" class="btn btn-secondary" id="btnCancel" style="flex: 1; justify-content: center;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Hitung HPP -->
+  <div id="hppModal" class="modal">
+    <div class="modal-content" style="max-width: 650px; width: 95%;">
+      <span class="close-hpp" style="position: absolute; top: 1rem; right: 1.5rem; color: #c9b29a; font-size: 1.5rem; font-weight: bold; cursor: pointer;">&times;</span>
+      <h2 style="color: #e6b989; margin-bottom: 1.5rem; text-align: center;">Hitung HPP</h2>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 1rem; align-items: flex-end;">
+        <div style="flex: 2;">
+          <label style="display: block; color: #c9b29a; margin-bottom: 0.5rem;">Nama Pengeluaran</label>
+          <input type="text" id="hppName" placeholder="Contoh: Susu, Gula" style="width: 100%; padding: 0.8rem; background: #251a12; border: 1px solid #3a2a1f; border-radius: 6px; color: #f8f1e9;">
+        </div>
+        <div style="flex: 1;">
+          <label style="display: block; color: #c9b29a; margin-bottom: 0.5rem;">Harga</label>
+          <input type="number" id="hppCost" placeholder="0" style="width: 100%; padding: 0.8rem; background: #251a12; border: 1px solid #3a2a1f; border-radius: 6px; color: #f8f1e9;">
+        </div>
+        <div class="hpp-action-buttons">
+          <button type="button" id="btnAddHpp" class="add-btn" title="Tambah Baru">
+            <i class="fas fa-plus"></i>
+          </button>
+          <button type="button" id="btnEditHpp" class="edit-btn" disabled title="Edit Item Terpilih">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <button type="button" id="btnDeleteHpp" class="delete-btn" disabled title="Hapus Item Terpilih">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem; border: 1px solid #3a2a1f; border-radius: 6px; overflow-x: auto;">
+        <table style="width: 100%; min-width: 500px; border-collapse: collapse;">
+          <thead style="background: #251a12; position: sticky; top: 0; z-index: 1;">
+            <tr>
+              <th style="padding: 0.8rem; text-align: center; color: #c9b29a; border-bottom: 1px solid #3a2a1f; width: 60px;">No</th>
+              <th style="padding: 0.8rem; text-align: left; color: #c9b29a; border-bottom: 1px solid #3a2a1f;">Nama Pengeluaran</th>
+              <th style="padding: 0.8rem; text-align: right; color: #c9b29a; border-bottom: 1px solid #3a2a1f;">Harga</th>
+            </tr>
+          </thead>
+          <tbody id="hppTableBody"></tbody>
+          <tfoot style="background: #251a12; font-weight: bold;">
+            <tr>
+              <td colspan="2" style="padding: 0.8rem; text-align: right; color: #e6b989; border-top: 1px solid #3a2a1f;">TOTAL HPP</td>
+              <td id="hppTotalDisplay" style="padding: 0.8rem; text-align: right; color: #e6b989; border-top: 1px solid #3a2a1f;">Rp 0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" class="btn btn-primary" id="btnConfirmHpp">Konfirmasi</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelHpp">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load logo & nama usaha
+      const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
+      const TABLE_MENU = 'tabelmenu';
+      const BUCKET_NAME = 'aset';
+
+      const navbarLogo = document.getElementById('navbarLogo');
+      const navbarBusinessName = document.getElementById('navbarBusinessName');
+
+      async function loadBusinessInfo() {
+        try {
+          const { data } = await supabase.from('tabelprofil').select('nama_usaha, logo').limit(1).single();
+          if (data) {
+            if (data.nama_usaha) navbarBusinessName.textContent = data.nama_usaha.toUpperCase();
+            if (data.logo) {
+              const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.logo);
+              navbarLogo.src = publicData.publicUrl;
+            }
+          }
+        } catch (err) { console.error('Error loading info:', err); }
+      }
+      loadBusinessInfo();
+
+      // Image Preview Logic
+      const menuPhotoInput = document.getElementById('menuPhoto');
+      const imagePreview = document.getElementById('imagePreview');
+
+      if (menuPhotoInput && imagePreview) {
+        menuPhotoInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              imagePreview.src = e.target.result;
+              imagePreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+          } else {
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
+          }
+        });
+      }
+
+      // Modal Menu Dasar
+      const modal = document.getElementById("menuModal");
+      const btn = document.getElementById("addMenuBtn");
+      const span = document.getElementsByClassName("close")[0];
+      const btnCancel = document.getElementById("btnCancel");
+
+      if (btn) btn.onclick = () => modal.style.display = "flex";
+      if (span) span.onclick = () => modal.style.display = "none";
+      if (btnCancel) btnCancel.onclick = () => modal.style.display = "none";
+
+      window.onclick = function(event) {
+        if (event.target == modal) modal.style.display = "none";
+        if (event.target == document.getElementById("hppModal")) {
+          document.getElementById("hppModal").style.display = "none";
+        }
+      }
+
+      // === LOGIKA MODAL HPP (Fungsi Sudah Diperbaiki) ===
+      const hppModal = document.getElementById("hppModal");
+      const btnCalc = document.querySelector('button[title="Hitung HPP"]');
+      const btnCloseHpp = document.querySelector('.close-hpp');
+      const btnCancelHpp = document.getElementById("btnCancelHpp");
+      const btnConfirmHpp = document.getElementById("btnConfirmHpp");
+      const btnAddHpp = document.getElementById("btnAddHpp");
+      const btnEditHpp = document.getElementById("btnEditHpp");
+      const btnDeleteHpp = document.getElementById("btnDeleteHpp");
+      
+      const hppNameInput = document.getElementById("hppName");
+      const hppCostInput = document.getElementById("hppCost");
+      const hppTableBody = document.getElementById("hppTableBody");
+      const hppTotalDisplay = document.getElementById("hppTotalDisplay");
+      const menuPriceInput = document.getElementById("menuPrice");
+
+      let hppData = [];
+      let selectedIndex = -1; // Index item yang sedang dipilih
+
+      function updateHppTable() {
+        hppTableBody.innerHTML = "";
+        let total = 0;
+
+        hppData.forEach((item, index) => {
+          total += Number(item.cost);
+
+          const row = document.createElement("tr");
+          row.style.cursor = "pointer";
+          if (index === selectedIndex) {
+            row.style.background = "rgba(193, 124, 74, 0.15)";
+          }
+
+          row.onclick = function() {
+            hppNameInput.value = item.name;
+            hppCostInput.value = item.cost;
+            selectedIndex = index;
+            updateActionButtons();
+            hppNameInput.focus();
+          };
+
+          row.innerHTML = `
+            <td style="padding: 0.8rem; text-align: center; color: #f8f1e9; border-bottom: 1px solid #3a2a1f;">${index + 1}</td>
+            <td style="padding: 0.8rem; text-align: left; color: #f8f1e9; border-bottom: 1px solid #3a2a1f; word-break: break-word;">${item.name}</td>
+            <td style="padding: 0.8rem; text-align: right; color: #f8f1e9; border-bottom: 1px solid #3a2a1f;">Rp ${Number(item.cost).toLocaleString('id-ID')}</td>
+          `;
+          hppTableBody.appendChild(row);
+        });
+
+        hppTotalDisplay.textContent = "Rp " + total.toLocaleString('id-ID');
+      }
+
+      function updateActionButtons() {
+        if (selectedIndex === -1) {
+          btnEditHpp.disabled = true;
+          btnEditHpp.classList.remove("enabled");
+          btnDeleteHpp.disabled = true;
+          btnDeleteHpp.classList.remove("enabled");
+        } else {
+          btnEditHpp.disabled = false;
+          btnEditHpp.classList.add("enabled");
+          btnDeleteHpp.disabled = false;
+          btnDeleteHpp.classList.add("enabled");
+        }
+      }
+
+      function clearForm() {
+        hppNameInput.value = "";
+        hppCostInput.value = "";
+      }
+
+      if (btnCalc) {
+        btnCalc.onclick = function() {
+          hppModal.style.display = "flex";
+          hppData = [];
+          selectedIndex = -1;
+          updateHppTable();
+          clearForm();
+          updateActionButtons();
+          hppNameInput.focus();
+        }
+      }
+
+      // Tombol + : Hanya tambah baru
+      btnAddHpp.onclick = function() {
+        const name = hppNameInput.value.trim();
+        const cost = hppCostInput.value.trim();
+
+        if (name && cost && Number(cost) >= 0) {
+          hppData.push({ name, cost: Number(cost) });
+          updateHppTable();
+          clearForm();
+          hppNameInput.focus();
+        }
+      }
+
+      // Tombol pensil : Update item yang dipilih
+      btnEditHpp.onclick = function() {
+        if (selectedIndex !== -1) {
+          const name = hppNameInput.value.trim();
+          const cost = hppCostInput.value.trim();
+
+          if (name && cost && Number(cost) >= 0) {
+            hppData[selectedIndex] = { name, cost: Number(cost) };
+            updateHppTable();
+            clearForm();
+            selectedIndex = -1;
+            updateActionButtons();
+            hppNameInput.focus();
+          }
+        }
+      }
+
+      // Tombol hapus
+      btnDeleteHpp.onclick = function() {
+        if (selectedIndex !== -1) {
+          hppData.splice(selectedIndex, 1);
+          updateHppTable();
+          clearForm();
+          selectedIndex = -1;
+          updateActionButtons();
+        }
+      }
+
+      // Enter di input harga = tambah baru
+      hppCostInput.addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+          btnAddHpp.click();
+        }
+      });
+
+      if (btnConfirmHpp) {
+        btnConfirmHpp.onclick = function() {
+          const total = hppData.reduce((sum, item) => sum + Number(item.cost), 0);
+          if (menuPriceInput) {
+            menuPriceInput.value = total;
+          }
+          hppModal.style.display = "none";
+        }
+      }
+
+      const closeHppModal = () => {
+        hppModal.style.display = "none";
+        clearForm();
+        selectedIndex = -1;
+        updateActionButtons();
+      };
+      if (btnCloseHpp) btnCloseHpp.onclick = closeHppModal;
+      if (btnCancelHpp) btnCancelHpp.onclick = closeHppModal;
+
+      // === LOGIKA CRUD MENU (SUPABASE) ===
+      
+      // 1. Fetch & Render Menu
+      async function fetchMenu() {
+        const tbody = document.querySelector('table tbody');
+        
+        try {
+          const { data, error } = await supabase
+            .from(TABLE_MENU)
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          tbody.innerHTML = '';
+          
+          if (data && data.length > 0) {
+            data.forEach((item, index) => {
+              let imgUrl = 'https://via.placeholder.com/100?text=No+Image';
+              if (item.photo) {
+                const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(item.photo);
+                imgUrl = publicData.publicUrl;
+              }
+
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td style="text-align: center;">${index + 1}</td>
+                <td>${item.nama_menu}</td>
+                <td>${item.deskripsi || '-'}</td>
+                <td>Rp ${Number(item.harga).toLocaleString('id-ID')}</td>
+                <td>
+                  <img src="${imgUrl}" alt="${item.nama_menu}" class="menu-thumb-table">
+                </td>
+                <td>
+                  <div class="action-icons">
+                    <button class="icon-btn edit" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="icon-btn delete" title="Hapus"><i class="fas fa-trash"></i></button>
+                  </div>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          } else {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Belum ada menu tersimpan.</td></tr>';
+          }
+        } catch (err) {
+          console.error('Gagal memuat menu:', err);
+        }
+      }
+
+      // Load menu saat awal
+      fetchMenu();
+
+      // 2. Tambah Menu (Insert)
+      const btnSave = document.getElementById('btnSave');
+      if (btnSave) {
+        btnSave.addEventListener('click', async () => {
+          const name = document.getElementById('menuName').value.trim();
+          const desc = document.getElementById('menuDesc').value.trim();
+          const price = document.getElementById('menuPrice').value;
+          const photoInput = document.getElementById('menuPhoto');
+          const file = photoInput.files[0];
+
+          if (!name || !price) {
+            alert('Nama Menu dan Harga wajib diisi!');
+            return;
+          }
+
+          btnSave.textContent = 'Menyimpan...';
+          btnSave.disabled = true;
+
+          try {
+            let photoPath = null;
+            
+            // Upload foto jika ada
+            if (file) {
+              const fileExt = file.name.split('.').pop();
+              const fileName = `menu_${Date.now()}.${fileExt}`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from(BUCKET_NAME)
+                .upload(fileName, file);
+              
+              if (uploadError) throw uploadError;
+              photoPath = fileName;
+            }
+
+            // Insert ke database
+            const { error: insertError } = await supabase
+              .from(TABLE_MENU)
+              .insert([{
+                nama_menu: name,
+                deskripsi: desc,
+                harga: price,
+                photo: photoPath
+              }]);
+
+            if (insertError) throw insertError;
+
+            alert('Menu berhasil ditambahkan!');
+            
+            // Reset form & tutup modal
+            document.getElementById('menuForm').reset();
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imagePreview').src = '';
+            document.getElementById('menuModal').style.display = 'none';
+            
+            // Refresh tabel
+            fetchMenu();
+
+          } catch (err) {
+            console.error('Error saving menu:', err);
+            alert('Gagal menyimpan menu: ' + (err.message || 'Terjadi kesalahan'));
+          } finally {
+            btnSave.textContent = 'Tambah Menu';
+            btnSave.disabled = false;
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
