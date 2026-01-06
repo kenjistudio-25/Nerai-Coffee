@@ -308,6 +308,11 @@
                  value="">
         </div>
 
+        <div class="form-group">
+          <label for="modalAwal">Modal Awal (Rp)</label>
+          <input type="number" id="modalAwal" placeholder="0">
+        </div>
+
         <div id="statusMessage" style="color:#c17c4a; text-align:center; margin-top:1rem; display:none;"></div>
 
         <div class="form-buttons">
@@ -393,6 +398,7 @@
           document.getElementById('phone').value = data.tlp || '';
           document.getElementById('email').value = data.email || '';
           document.getElementById('username').value = data.username || '';
+          document.getElementById('modalAwal').value = data.modal_awal || '';
 
           // === BARU: Load password dari database ===
           if (data.password) {
@@ -451,7 +457,8 @@
           alamat: document.getElementById('address').value.trim(),
           tlp: document.getElementById('phone').value.trim(),
           email: document.getElementById('email').value.trim(),
-          username: document.getElementById('username').value.trim()
+          username: document.getElementById('username').value.trim(),
+          modal_awal: document.getElementById('modalAwal').value.trim()
         };
 
         // Hanya simpan password jika diisi
