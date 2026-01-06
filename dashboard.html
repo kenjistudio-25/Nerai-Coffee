@@ -299,14 +299,14 @@
           <i class="fas fa-chevron-down" style="margin-right: 0; font-size: 0.8rem;"></i>
         </a>
         <ul class="dropdown-menu">
-          <li><a href="#" style="padding-left: 3rem;"><i class="fas fa-arrow-up"></i> Pemasukan</a></li>
-          <li><a href="#" style="padding-left: 3rem;"><i class="fas fa-arrow-down"></i> Pengeluaran</a></li>
-          <li><a href="#" style="padding-left: 3rem;"><i class="fas fa-balance-scale"></i> Neraca</a></li>
+          <li><a href="pemasukan.html" style="padding-left: 3rem;"><i class="fas fa-arrow-up"></i> Pemasukan</a></li>
+          <li><a href="pengeluaran.html" style="padding-left: 3rem;"><i class="fas fa-arrow-down"></i> Pengeluaran</a></li>
+          <li><a href="Neraca.html" style="padding-left: 3rem;"><i class="fas fa-balance-scale"></i> Neraca</a></li>
         </ul>
       </li>
       <li><a href="kelolabank.html"><i class="fas fa-building-columns"></i> Rekening Pembayaran</a></li>
       <li><a href="orderhariini.html"><i class="fas fa-receipt"></i> Transaksi Hari Ini</a></li>
-      <li><a href="#"><i class="fas fa-database"></i> Backup & Reset Data</a></li>
+      <li><a href="backup.html"><i class="fas fa-database"></i> Backup & Reset Data</a></li>
     </ul>
 
     <div class="sidebar-footer">
@@ -377,16 +377,22 @@
     <div class="section-container">
       <h2 style="color:#333; margin-bottom:1rem; font-size:1.3rem;">PENGELUARAN</h2>
       <div class="stats-grid" style="margin-top: 0; margin-bottom: 0;">
-        <div class="card">
+        <div class="card" style="background: #c0392b;">
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <input type="date" id="dateExpense" style="flex: 1; background: #fff; color: #333; border: 1px solid #ccc; padding: 0.5rem; border-radius: 8px; outline: none; font-family: inherit;">
+            <button id="resetExpense" title="Reset Filter" style="background: #f0f0f0; border: 1px solid #ccc; color: #333; border-radius: 8px; width: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+              <i class="fas fa-undo"></i>
+            </button>
+          </div>
           <i class="fas fa-shopping-cart card-icon"></i>
           <div class="card-title">Pengeluaran</div>
-          <div class="card-value">Rp 980.000</div>
+          <div class="card-value" id="expenseTotal">Rp 0</div>
         </div>
   
         <div class="card">
           <i class="fas fa-balance-scale card-icon"></i>
           <div class="card-title">Balance</div>
-          <div class="card-value">Rp 1.860.000</div>
+          <div class="card-value" id="balanceTotal">Rp 0</div>
         </div>
       </div>
     </div>
@@ -462,10 +468,12 @@
     <!-- Chart Penjualan Bulanan -->
     <div class="chart-container">
       <div class="chart-header">
-        <h2 class="chart-title">Statistik Penjualan Bulanan 2025</h2>
-        <select title="Pilih Tahun" style="padding:0.6rem 1rem; background:#fff; color:#333; border:1px solid #ccc; border-radius:8px;">
-          <option>Tahun 2025</option>
-          <option>Tahun 2024</option>
+        <h2 class="chart-title" id="chartTitle">Statistik Penjualan Bulanan</h2>
+        <select id="yearFilter" title="Pilih Tahun" style="padding:0.6rem 1rem; background:#fff; color:#333; border:1px solid #ccc; border-radius:8px;">
+          <option value="2026">Tahun 2026</option>
+          <option value="2025">Tahun 2027</option>
+          <option value="2025">Tahun 2028</option>
+          <option value="2025">Tahun 2029</option>
         </select>
       </div>
       <div style="position: relative; height: 340px; width: 100%;">
@@ -518,6 +526,9 @@
 
       const navbarLogo = document.getElementById('navbarLogo');
       const navbarBusinessName = document.getElementById('navbarBusinessName');
+
+      let globalIncome = 0;
+      let globalExpense = 0;
 
       async function loadBusinessInfo() {
         try {
@@ -613,12 +624,60 @@
             return acc + nilai;
           }, 0);
 
+          globalIncome = total;
+          updateBalance();
+
           const el = document.getElementById('incomeTotal');
           if (el) {
             el.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
           }
         } catch (err) {
           console.error('Gagal memuat total pemasukan:', err);
+        }
+      }
+
+      async function loadTotalExpense(selectedDate = null) {
+        try {
+          let query = supabase.from('pengeluaran').select('total_belanja');
+
+          if (selectedDate) {
+            const startDate = `${selectedDate}T00:00:00`;
+            const endDate = `${selectedDate}T23:59:59.999`;
+            query = query.gte('tanggal', startDate).lte('tanggal', endDate);
+          }
+
+          const { data, error } = await query;
+          if (error) throw error;
+
+          const total = data.reduce((acc, curr) => {
+            const val = Number(curr.total_belanja) || 0;
+            return acc + val;
+          }, 0);
+
+          if (!selectedDate) {
+            globalExpense = total;
+            updateBalance();
+          }
+
+          const el = document.getElementById('expenseTotal');
+          if (el) {
+            el.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total);
+          }
+        } catch (err) {
+          console.error('Gagal memuat total pengeluaran:', err);
+        }
+      }
+
+      function updateBalance() {
+        const balance = globalIncome - globalExpense;
+        const el = document.getElementById('balanceTotal');
+        if (el) {
+          el.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(balance);
+          if (balance < 0) {
+            el.style.color = '#ff6b6b';
+          } else {
+            el.style.color = '#d6f510';
+          }
         }
       }
 
@@ -637,12 +696,20 @@
         document.getElementById('dateOnsite').value = '';
         loadOnsiteIncome();
       });
+      document.getElementById('dateExpense').addEventListener('change', function(e) {
+        loadTotalExpense(e.target.value);
+      });
+      document.getElementById('resetExpense').addEventListener('click', function() {
+        document.getElementById('dateExpense').value = '';
+        loadTotalExpense();
+      });
 
       // Jalankan saat load
       loadBusinessInfo();
       loadOnlineIncome();
       loadOnsiteIncome();
       loadTotalIncome();
+      loadTotalExpense();
 
       // Jam & Tanggal
       function updateDashboardClock() {
@@ -656,57 +723,147 @@
       }
       setInterval(updateDashboardClock, 1000);
       updateDashboardClock();
-    });
 
-    // Chart tetap sama
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    const salesData = [48.5, 52.2, 58.9, 61.3, 67.8, 64.1, 70.4, 68.9, 72.5, 75.2, 82.6, 98.7];
+      // === CHART LOGIC (Pemasukan vs Pengeluaran) ===
+      let monthlyChart = null;
 
-    const ctx = document.getElementById('monthlySalesChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: months,
-        datasets: [{
-          label: 'Penjualan (Juta Rp)',
-          data: salesData,
-          borderColor: '#c17c4a',
-          backgroundColor: 'rgba(193, 124, 74, 0.25)',
-          borderWidth: 3,
-          tension: 0.4,
-          fill: true,
-          pointBackgroundColor: '#e6b989',
-          pointBorderColor: '#c17c4a',
-          pointBorderWidth: 2,
-          pointRadius: 5,
-          pointHoverRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { labels: { color: '#555', font: { size: 14 } } },
-          tooltip: {
-            backgroundColor: 'rgba(26, 18, 12, 0.9)',
-            titleColor: '#e6b989',
-            bodyColor: '#f8f1e9',
-            borderColor: '#c17c4a',
-            borderWidth: 1
+      async function updateChartData(year) {
+        const incomeData = new Array(12).fill(0);
+        const expenseData = new Array(12).fill(0);
+
+        try {
+          const startDate = `${year}-01-01`;
+          const endDate = `${year}-12-31`;
+
+          // 1. Fetch Pemasukan
+          const { data: incomeRes, error: incomeErr } = await supabase
+            .from('pemasukan')
+            .select('tanggal, total_belanja')
+            .gte('tanggal', startDate)
+            .lte('tanggal', endDate);
+
+          if (incomeRes) {
+            incomeRes.forEach(item => {
+              if (item.tanggal) {
+                const m = new Date(item.tanggal).getMonth();
+                const val = parseFloat(String(item.total_belanja || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                incomeData[m] += val;
+              }
+            });
           }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-              title: { display: true, text: 'Penjualan (Juta Rp)', color: '#666', font: { size: 14 } },
-              ticks: { color: '#666', callback: value => value + ' jt' },
-              grid: { color: '#eee' }
-          },
-          x: {
-              ticks: { color: '#666' },
-            grid: { display: false }
+
+          // 2. Fetch Pengeluaran
+          const { data: expenseRes, error: expenseErr } = await supabase
+            .from('pengeluaran')
+            .select('tanggal, total_belanja')
+            .gte('tanggal', startDate)
+            .lte('tanggal', endDate);
+
+          if (expenseRes) {
+            expenseRes.forEach(item => {
+              if (item.tanggal) {
+                const m = new Date(item.tanggal).getMonth();
+                const val = parseFloat(String(item.total_belanja || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                expenseData[m] += val;
+              }
+            });
           }
+
+          renderChart(incomeData, expenseData);
+
+        } catch (err) {
+          console.error('Gagal memuat data chart:', err);
         }
+      }
+
+      function renderChart(incomeData, expenseData) {
+        const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+        
+        if (monthlyChart) {
+          monthlyChart.destroy();
+        }
+
+        monthlyChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"],
+            datasets: [
+              {
+                label: 'Pemasukan',
+                data: incomeData,
+                borderColor: '#27ae60',
+                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#2ecc71',
+                pointRadius: 4
+              },
+              {
+                label: 'Pengeluaran',
+                data: expenseData,
+                borderColor: '#c0392b',
+                backgroundColor: 'rgba(192, 57, 43, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#e74c3c',
+                pointRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#555', font: { size: 14 } } },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.parsed.y !== null) {
+                      label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { 
+                  color: '#666',
+                  callback: function(value) {
+                    return (value / 1000000).toLocaleString('id-ID') + ' Jt';
+                  }
+                },
+                grid: { color: '#eee' }
+              },
+              x: {
+                ticks: { color: '#666' },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      }
+
+      // Init Chart
+      const yearFilter = document.getElementById('yearFilter');
+      const chartTitle = document.getElementById('chartTitle');
+
+      if (yearFilter) {
+        yearFilter.addEventListener('change', (e) => {
+          updateChartData(e.target.value);
+          if (chartTitle) chartTitle.textContent = `Statistik Penjualan Bulanan ${e.target.value}`;
+        });
+        // Load default
+        updateChartData(yearFilter.value);
+        if (chartTitle) chartTitle.textContent = `Statistik Penjualan Bulanan ${yearFilter.value}`;
       }
     });
   </script>
