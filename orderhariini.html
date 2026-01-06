@@ -15,6 +15,13 @@
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -210,6 +217,10 @@
       cursor: not-allowed;
     }
 
+    #btnCancelOrder:hover:not(:disabled) {
+      background: #ff6b6b;
+    }
+
     /* Custom Outline Buttons */
     .btn-action-outline {
       background: transparent;
@@ -309,10 +320,10 @@
     /* Light Mode Table for Modal */
     .light-mode-table { width: 100%; border-collapse: collapse; }
     .light-mode-table th, .light-mode-table td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #dee2e6; color: #333; }
-    .light-mode-table th { background: #e9ecef; color: #333; font-weight: 600; }
+    .light-mode-table th { background: #d0d5da; color: #333; font-weight: 600; }
     .light-mode-table td { vertical-align: middle; }
     .light-mode-table tfoot tr { background: #e9ecef; font-weight: bold; }
-    .light-mode-table tfoot td { color: #333; border-top: 2px solid #ced4da; }
+    .light-mode-table tfoot td { color: #333; border-top: 2px solid #38648f; }
 
     /* Badge Styles */
     .notification-badge {
@@ -329,6 +340,40 @@
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
+    }
+
+    /* === LIGHT MODE STYLE FOR TAB TOTAL === */
+    #total {
+      background-color: #306091;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-top: 1rem;
+    }
+    #total .card {
+      background: #ffffff;
+      border: 1px solid #dee2e6;
+      box-shadow: 0 4px 6px rgba(94, 194, 224, 0.05);
+    }
+    #total .card-title, #total h5 {
+      color: #495057 !important;
+    }
+    #total .card-value {
+      color: #212529;
+    }
+    #total .card-icon {
+      color: #e06f24;
+    }
+    #total .detail-table th {
+      background: #0b0c0c;
+      color: #e6b926;
+      border-bottom: 2px solid #dee2e6;
+    }
+    #total .detail-table td {
+      color: #212529;
+      border-bottom: 1px solid #dee2e6;
+    }
+    #total .detail-table {
+      background: #ffffff;
     }
   </style>
 </head>
@@ -425,10 +470,11 @@
               </div>
             </div>
             <button id="btnCompleteOrder" class="btn-complete" disabled>Pesanan Selesai</button>
+            <button id="btnCancelOrder" class="btn-complete" style="margin-top: 0.5rem;" disabled>Batalkan Pesanan</button>
           </div>
 
           <div class="order-details">
-            <h3>Detail Pesanan</h3>
+            <h3>Detail Pesanan</h3>s
             <div class="table-responsive">
               <table class="detail-table">
                 <thead>
@@ -575,8 +621,83 @@
 
       <!-- TAB 3: Total Transaksi Online dan Onsite -->
       <div class="tab-pane fade" id="total" role="tabpanel">
-        <div class="placeholder-content">
-          <p>Ringkasan Total Transaksi Online dan Onsite akan ditampilkan di sini.</p>
+        
+        <!-- Action Buttons -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <button id="btnExportTotalPdf" class="btn-complete" style="margin-top: 0; background: #c17c4a; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i class="fas fa-file-pdf"></i> Export Pdf
+          </button>
+          <a href="dashboard.html" class="btn-complete" style="margin-top: 0; background: #333; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <i class="fas fa-arrow-left"></i> Kembali Ke Dashboard
+          </a>
+        </div>
+
+        <!-- Stats Grid Total -->
+        <div class="stats-grid">
+          <div class="card">
+            <i class="fas fa-coins card-icon"></i>
+            <div class="card-title">Total Pemasukan (Rekap)</div>
+            <div class="card-value" id="rekapIncomeDisplay">Rp 0</div>
+          </div>
+          <div class="card">
+            <i class="fas fa-globe card-icon"></i>
+            <div class="card-title">Pemasukan Online</div>
+            <div class="card-value" id="rekapOnlineDisplay">Rp 0</div>
+          </div>
+          <div class="card">
+            <i class="fas fa-store card-icon"></i>
+            <div class="card-title">Pemasukan On Site</div>
+            <div class="card-value" id="rekapOnsiteDisplay">Rp 0</div>
+          </div>
+          <div class="card">
+            <i class="fas fa-receipt card-icon"></i>
+            <div class="card-title">Total Transaksi (Rekap)</div>
+            <div class="card-value" id="rekapTransactionDisplay">0</div>
+          </div>
+        </div>
+
+        <div class="row mt-4">
+          <div class="col-lg-4 mb-4">
+            <div class="card h-100" style="min-height: 400px; display:flex; align-items:center; justify-content:center; flex-direction: column;">
+              <h5 style="color:#e6b989; margin-bottom:1.5rem;">Proporsi Pemasukan</h5>
+              <div style="width: 100%; max-width: 350px;">
+                <canvas id="incomePieChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+              <h5 style="color:#e6b989; margin-bottom:1.5rem;">Statistik Bulanan (Online vs Onsite)</h5>
+              <div style="position: relative; height: 350px; width: 100%;">
+                <canvas id="incomeBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12 mb-4">
+            <div class="card h-100">
+              <h5 style="color:#e6b989; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+                Preview Data Pemasukan
+                <a href="pemasukan.html" class="btn-action-outline" style="font-size:0.8rem; padding:0.3rem 0.8rem; text-decoration:none; border-radius:6px;">Lihat Semua</a>
+              </h5>
+              <div class="table-responsive" style="max-height: 350px;">
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>Customer</th>
+                      <th style="text-align:right;">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rekapPreviewBody">
+                    <tr><td colspan="3" style="text-align:center; padding:1rem; color:#c9b29a;">Memuat data...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -752,6 +873,7 @@
       const detailProof = document.getElementById('detailProof');
       const btnViewProof = document.getElementById('btnViewProof');
       const btnCompleteOrder = document.getElementById('btnCompleteOrder');
+      const btnCancelOrder = document.getElementById('btnCancelOrder');
 
       // Variables for Onsite Transaction
       let onsiteCart = [];
@@ -824,6 +946,7 @@
           orderDetailsForm.style.display = 'none';
           loadAllOrderDetails();
           btnCompleteOrder.disabled = true;
+          if(btnCancelOrder) btnCancelOrder.disabled = true;
           return;
         }
 
@@ -863,6 +986,7 @@
 
           orderDetailsForm.style.display = 'block';
           btnCompleteOrder.disabled = false;
+          if(btnCancelOrder) btnCancelOrder.disabled = false;
 
           loadOrderDetails(selectedId);
         }
@@ -978,6 +1102,50 @@
           this.textContent = originalText;
         }
       });
+
+      // Event Listener Tombol Batalkan Pesanan
+      if (btnCancelOrder) {
+        btnCancelOrder.addEventListener('click', async function() {
+          const selectedId = orderSelect.value;
+          if (!selectedId) return;
+
+          if (!confirm('Apakah Anda yakin ingin membatalkan pesanan ini? Data akan dihapus permanen.')) return;
+
+          const originalText = this.textContent;
+          this.textContent = 'Memproses...';
+          this.disabled = true;
+
+          try {
+            // 1. Hapus detail pesanan dari tabelorder
+            const { error: delOrderError } = await supabase
+              .from('tabelorder')
+              .delete()
+              .eq('id_order', selectedId);
+            if (delOrderError) throw delOrderError;
+
+            // 2. Hapus data customer dari tabelcustomer
+            const { error: delCustError } = await supabase
+              .from('tabelcustomer')
+              .delete()
+              .eq('id_order', selectedId);
+            if (delCustError) throw delCustError;
+
+            alert('Pesanan berhasil dibatalkan.');
+            
+            orderDetailsForm.style.display = 'none';
+            orderDetailBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#c9b29a;">Silakan pilih ID Order di samping.</td></tr>';
+            document.getElementById('totalValue').textContent = 'Rp 0';
+            
+            fetchOrders();
+            
+          } catch (err) {
+            console.error('Error cancelling order:', err);
+            alert('Gagal membatalkan pesanan: ' + err.message);
+          } finally {
+            this.textContent = originalText;
+          }
+        });
+      }
 
       async function updateDailyStats() {
         const incomeDisplay = document.getElementById('dailyIncomeDisplay');
@@ -1105,7 +1273,7 @@
           const originalHtml = this.innerHTML;
           this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
           this.disabled = true;
-          await Promise.all([fetchOrders(), fetchOnsiteOrders()]);
+          await Promise.all([fetchOrders(), fetchOnsiteOrders(), loadTotalTab()]);
           this.innerHTML = originalHtml;
           this.disabled = false;
         });
@@ -1118,7 +1286,7 @@
           const originalHtml = this.innerHTML;
           this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
           this.disabled = true;
-          await Promise.all([fetchOrders(), fetchOnsiteOrders()]);
+          await Promise.all([fetchOrders(), fetchOnsiteOrders(), loadTotalTab()]);
           this.innerHTML = originalHtml;
           this.disabled = false;
         });
@@ -1627,6 +1795,220 @@
             this.textContent = originalText;
             this.disabled = false;
           }
+        });
+      }
+
+      // === LOGIKA TAB TOTAL (CHART & PREVIEW) ===
+      let incomeChartInstance = null;
+      let barChartInstance = null;
+      let totalTabData = []; // Variabel untuk menyimpan data agar bisa diexport
+
+      async function loadTotalTab() {
+        try {
+          const { data, error } = await supabase
+            .from('pemasukan')
+            .select('*')
+            .order('tanggal', { ascending: false }); // Ambil semua untuk statistik
+
+          if (error) throw error;
+
+          const allData = data || [];
+          totalTabData = allData; // Simpan ke variabel global scope fungsi
+          
+          // Hitung Statistik
+          let totalIncome = 0;
+          let onlineIncome = 0;
+          let onsiteIncome = 0;
+          const onlineMonthly = new Array(12).fill(0);
+          const onsiteMonthly = new Array(12).fill(0);
+          
+          allData.forEach(item => {
+            const amount = Number(item.total_belanja) || 0;
+            totalIncome += amount;
+            
+            if (item.nama_customer === 'Onsite') {
+              onsiteIncome += amount;
+              if (item.tanggal) {
+                const mIndex = new Date(item.tanggal).getMonth();
+                if (mIndex >= 0 && mIndex < 12) onsiteMonthly[mIndex] += amount;
+              }
+            } else {
+              onlineIncome += amount;
+              if (item.tanggal) {
+                const mIndex = new Date(item.tanggal).getMonth();
+                if (mIndex >= 0 && mIndex < 12) onlineMonthly[mIndex] += amount;
+              }
+            }
+          });
+
+          // Update UI Cards
+          document.getElementById('rekapIncomeDisplay').textContent = `Rp ${totalIncome.toLocaleString('id-ID')}`;
+          document.getElementById('rekapOnlineDisplay').textContent = `Rp ${onlineIncome.toLocaleString('id-ID')}`;
+          document.getElementById('rekapOnsiteDisplay').textContent = `Rp ${onsiteIncome.toLocaleString('id-ID')}`;
+          document.getElementById('rekapTransactionDisplay').textContent = allData.length;
+
+          // Update Table Preview (Limit 15)
+          const previewBody = document.getElementById('rekapPreviewBody');
+          previewBody.innerHTML = '';
+          
+          if (allData.length === 0) {
+            previewBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:#c9b29a;">Belum ada data pemasukan.</td></tr>';
+          } else {
+            allData.slice(0, 15).forEach(item => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${item.tanggal || '-'}</td>
+                <td>${item.nama_customer || '-'}</td>
+                <td style="text-align:right;">Rp ${(Number(item.total_belanja)||0).toLocaleString('id-ID')}</td>
+              `;
+              previewBody.appendChild(row);
+            });
+          }
+
+          // Render Chart
+          const ctx = document.getElementById('incomePieChart').getContext('2d');
+          
+          if (incomeChartInstance) {
+            incomeChartInstance.destroy();
+          }
+
+          incomeChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Online', 'On Site'],
+              datasets: [{
+                data: [onlineIncome, onsiteIncome],
+                backgroundColor: ['#e97528', '#9aed5b'],
+                borderColor: ['#1a120c', '#1a120c'],
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#333', font: { family: 'Poppins' }, padding: 20 }
+                }
+              }
+            }
+          });
+
+          // Render Bar Chart
+          const ctxBar = document.getElementById('incomeBarChart').getContext('2d');
+          
+          if (barChartInstance) {
+            barChartInstance.destroy();
+          }
+
+          barChartInstance = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+              datasets: [
+                {
+                  label: 'Online',
+                  data: onlineMonthly,
+                  backgroundColor: '#e97528',
+                  borderRadius: 4
+                },
+                {
+                  label: 'On Site',
+                  data: onsiteMonthly,
+                  backgroundColor: '#9aed5b',
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { labels: { color: '#333' } }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: '#333', callback: function(value) { return 'Rp ' + (value/1000).toLocaleString('id-ID') + 'k'; } },
+                  grid: { color: '#e0e0e0' }
+                },
+                x: {
+                  ticks: { color: '#333' },
+                  grid: { display: false }
+                }
+              }
+            }
+          });
+
+        } catch (err) {
+          console.error('Error loading total tab:', err);
+        }
+      }
+
+      // === Export PDF Logic for Total Tab ===
+      const btnExportTotalPdf = document.getElementById('btnExportTotalPdf');
+      if (btnExportTotalPdf) {
+        btnExportTotalPdf.addEventListener('click', function() {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+
+          // Header
+          doc.setFontSize(18);
+          doc.text('Laporan Transaksi Hari Ini - Nerai Coffee', 14, 22);
+          
+          doc.setFontSize(10);
+          const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+
+          // Stats Summary
+          const rekapIncome = document.getElementById('rekapIncomeDisplay').textContent;
+          const rekapOnline = document.getElementById('rekapOnlineDisplay').textContent;
+          const rekapOnsite = document.getElementById('rekapOnsiteDisplay').textContent;
+          const rekapTrx = document.getElementById('rekapTransactionDisplay').textContent;
+
+          const summaryData = [
+            ['Kategori', 'Nilai'],
+            ['Total Pemasukan', rekapIncome],
+            ['Pemasukan Online', rekapOnline],
+            ['Pemasukan On Site', rekapOnsite],
+            ['Total Transaksi', rekapTrx]
+          ];
+
+          doc.autoTable({
+            startY: 35,
+            head: [summaryData[0]],
+            body: summaryData.slice(1),
+            theme: 'grid',
+            headStyles: { fillColor: [193, 124, 74] }
+          });
+
+          let finalY = doc.lastAutoTable.finalY + 10;
+          doc.text('Rincian Pemasukan', 14, finalY);
+
+          const tableRows = totalTabData.map(item => [
+            item.tanggal || '-',
+            item.nama_customer || '-',
+            `Rp ${(Number(item.total_belanja)||0).toLocaleString('id-ID')}`
+          ]);
+
+          doc.autoTable({
+            startY: finalY + 5,
+            head: [['Tanggal', 'Customer', 'Total']],
+            body: tableRows,
+            theme: 'striped',
+            headStyles: { fillColor: [37, 26, 18] }
+          });
+
+          doc.save('Laporan_Transaksi_Hari_Ini.pdf');
+        });
+      }
+
+      // Load Total Tab saat tab diklik (agar chart render dengan ukuran benar)
+      const totalTabBtn = document.getElementById('total-tab');
+      if (totalTabBtn) {
+        totalTabBtn.addEventListener('shown.bs.tab', function () {
+          loadTotalTab();
         });
       }
 
