@@ -137,8 +137,9 @@
             background: var(--card);
             border-radius: 16px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            overflow: hidden;
+            overflow-x: auto;
             margin-bottom: 30px;
+            -webkit-overflow-scrolling: touch;
         }
         table {
             width: 100%;
@@ -149,6 +150,7 @@
             text-align: left;
             border-bottom: 1px solid var(--border);
             vertical-align: middle;
+            white-space: nowrap;
         }
         th {
             background: #2d2d2d;
