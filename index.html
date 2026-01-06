@@ -424,6 +424,14 @@
         });
       }
 
+      // === CEK URL PARAMETER (Untuk Auto Open Login setelah Reset) ===
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('action') === 'login') {
+        if (modal) modal.style.display = 'flex';
+        // Bersihkan URL agar tidak muncul terus saat refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       // === ACCORDION LOGIC ===
       const header = document.querySelector('.accordion-header');
       const content = document.querySelector('.accordion-content');
@@ -577,15 +585,34 @@
           btnLogin.disabled = true;
 
           try {
-            const { data, error } = await supabase
+            // Ambil data profil (limit 1) untuk cek apakah tabel kosong/terisi
+            const { data: profileData, error } = await supabase
               .from('tabelprofil')
-              .select('owner')
-              .eq('username', usernameVal)
-              .eq('password', passwordVal)
+              .select('username, password, owner')
+              .limit(1)
               .maybeSingle();
 
-            if (data) {
-              alert(`Selamat datang ${data.owner}`);
+            if (error) throw error;
+
+            let isAuthenticated = false;
+            let ownerName = 'Admin';
+
+            // LOGIKA VALIDASI:
+            // 1. Jika tabel kosong ATAU kolom username/password kosong -> Pakai Default (admin/admin123)
+            // 2. Jika tabel terisi -> Pakai Data Database
+            if (!profileData || !profileData.username || !profileData.password) {
+              if (usernameVal === 'admin' && passwordVal === 'admin123') {
+                isAuthenticated = true;
+              }
+            } else {
+              if (usernameVal === profileData.username && passwordVal === profileData.password) {
+                isAuthenticated = true;
+                ownerName = profileData.owner || 'Owner';
+              }
+            }
+
+            if (isAuthenticated) {
+              alert(`Selamat datang ${ownerName}`);
               window.location.href = 'dashboard.html';
             } else {
               alert("Maaf, Username atau password yang anda masukan salah.");
