@@ -298,6 +298,11 @@
 
     .confirm-buttons .delete { background:#ff6b6b; color:white; }
     .confirm-buttons .cancel { background:#3a2a1f; color:#c9b29a; }
+
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   </style>
 </head>
 <body>
@@ -332,6 +337,7 @@
 
   <h2>Daftar Pesanan</h2>
   <div class="order-list-container">
+    <div class="table-responsive">
     <table class="order-table" id="orderTable">
       <thead>
         <tr>
@@ -353,6 +359,7 @@
         </tr>
       </tfoot>
     </table>
+    </div>
 
     <div id="emptyMessage" class="empty-message">
       Belum ada pesanan. Klik tombol di bawah!
