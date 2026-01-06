@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rekapitulasi Pemasukan - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #393d39;
+      color: #f8f1e9;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,5,3,0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #3a2a1f;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #e6b989;
+    }
+
+    /* ================== MAIN CONTENT ================== */
+    .container {
+      padding: 100px 2rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e8fd05;
+      margin-bottom: 3rem;
+      font-size: 2rem;
+    }
+
+    .stats-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .card {
+      background: #e6ddcc;
+      border: 1px solid #020202;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: #c17c4a;
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #281201;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #070707;
+      padding-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .stat-label {
+      color: #351409;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #3e2723;
+    }
+
+    .highlight {
+      color: #2e7d32;
+      font-size: 1.4rem;
+    }
+
+    .btn-back {
+      display: inline-block;
+      padding: 0.8rem 1.5rem;
+      background: transparent;
+      border: 1px solid #d4e70d;
+      color: #faf4f0;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+      background: #438204;
+      color: #fff;
+      border: 1px solid #ffffff;
+    }
+
+    /* Table Styles */
+    .table-container {
+      margin-top: 1.5rem;
+      overflow-x: auto;
+      background: #000000;
+      border: 1px solid #623f27;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      color: #90ef24;
+    }
+    
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #3a2a1f;
+    }
+    
+    th {
+      font-weight: 600;
+      color: #d1e806;
+      background: #011e2b;
+      position: sticky;
+      top: 0;
+    }
+    
+    td {
+      color: #fffffe;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar (Tanpa Hamburger) -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Rekapitulasi Pemasukan Usaha</h1>
+
+    <!-- Filter Bulan -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <input type="month" id="monthFilter" style="padding: 0.6rem; border-radius: 8px; border: 1px solid #c17c4a; background: #e6ddcc; color: #3e2723; font-family: 'Poppins', sans-serif; font-weight: 600;">
+      <button id="btnResetFilter" class="btn-back" style="margin-left: 10px; padding: 0.6rem 1rem; cursor: pointer; font-size: 0.9rem;">Reset</button>
+    </div>
+
+    <div class="stats-grid">
+      <!-- Kontainer 1: Transaksi Online -->
+      <div class="card">
+        <div class="card-title"><i class="fas fa-globe"></i> Transaksi Online</div>
+        <div class="stat-row">
+          <span class="stat-label">Jumlah Transaksi</span>
+          <span class="stat-value" id="onlineCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total Pemasukan</span>
+          <span class="stat-value highlight" id="onlineTotal">Rp 0</span>
+        </div>
+
+        <!-- Tabel Rincian Transaksi Online -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Id Transaksi</th>
+                <th>Tanggal</th>
+                <th>Nama Customer</th>
+                <th style="text-align: right;">Total Belanja</th>
+              </tr>
+            </thead>
+            <tbody id="onlineTableBody">
+              <tr><td colspan="4" style="text-align: center;">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Kontainer 2: Transaksi On Site -->
+      <div class="card">
+        <div class="card-title"><i class="fas fa-store"></i> Transaksi On Site</div>
+        <div class="stat-row">
+          <span class="stat-label">Jumlah Transaksi</span>
+          <span class="stat-value" id="onsiteCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total Pemasukan</span>
+          <span class="stat-value highlight" id="onsiteTotal">Rp 0</span>
+        </div>
+
+        <!-- Tabel Rincian Transaksi Onsite -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Id Transaksi</th>
+                <th>Tanggal</th>
+                <th>Nama Customer</th>
+                <th style="text-align: right;">Total Belanja</th>
+              </tr>
+            </thead>
+            <tbody id="onsiteTableBody">
+              <tr><td colspan="4" style="text-align: center;">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Kontainer 3: Rekapitulasi Pemasukan -->
+      <div class="card" style="background: #05443a; border-color: #27ae60;">
+        <div class="card-title" style="color: #ffffff;"><i class="fas fa-chart-line"></i> Rekapitulasi Pemasukan</div>
+        <div class="stat-row">
+          <span class="stat-label" style="color: #c9e8de;">Total Transaksi (All)</span>
+          <span class="stat-value" id="grandCount" style="color: #ffffff;">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label" style="color: #c9e8de;">Total Pemasukan (All)</span>
+          <span class="stat-value highlight" id="grandTotal" style="color: #d6f510;">Rp 0</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; display: flex; justify-content: center; gap: 1rem;">
+      <button id="btnExportPdf" class="btn-back" style="cursor: pointer;"><i class="fas fa-file-pdf"></i> Export Pdf</button>
+      <a href="dashboard.html" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Load Info Usaha (Logo & Nama)
+      try {
+        const { data } = await supabase.from('tabelprofil').select('nama_usaha, logo').limit(1).single();
+        if (data) {
+          if (data.nama_usaha) document.getElementById('navbarBusinessName').textContent = data.nama_usaha.toUpperCase();
+          if (data.logo) {
+            const { data: publicData } = supabase.storage.from('aset').getPublicUrl(data.logo);
+            document.getElementById('navbarLogo').src = publicData.publicUrl;
+          }
+        }
+      } catch (err) { console.error('Error loading info:', err); }
+
+      // Helper untuk format Rupiah
+      const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+      let allOnlineData = [];
+      let allOnsiteData = [];
+
+      // Fetch Data Pemasukan
+      async function loadData() {
+        try {
+          // 1. Fetch Online (nama_customer != 'Onsite')
+          const { data: onlineData, error: onlineError } = await supabase
+            .from('pemasukan')
+            .select('id_transaksi, tanggal, nama_customer, total_belanja')
+            .neq('nama_customer', 'Onsite')
+            .order('tanggal', { ascending: false });
+
+          // 2. Fetch Onsite (nama_customer == 'Onsite')
+          const { data: onsiteData, error: onsiteError } = await supabase
+            .from('pemasukan')
+            .select('id_transaksi, tanggal, nama_customer, total_belanja')
+            .eq('nama_customer', 'Onsite')
+            .order('tanggal', { ascending: false });
+
+          if (onlineError) throw onlineError;
+          if (onsiteError) throw onsiteError;
+
+          allOnlineData = onlineData || [];
+          allOnsiteData = onsiteData || [];
+
+          renderData();
+
+        } catch (err) {
+          console.error('Gagal memuat data pemasukan:', err);
+        }
+      }
+
+      function renderData() {
+        const filterValue = document.getElementById('monthFilter').value;
+        
+        const filteredOnline = filterValue ? allOnlineData.filter(d => d.tanggal && d.tanggal.startsWith(filterValue)) : allOnlineData;
+        const filteredOnsite = filterValue ? allOnsiteData.filter(d => d.tanggal && d.tanggal.startsWith(filterValue)) : allOnsiteData;
+
+        // Hitung Online
+        const onlineCount = filteredOnline.length;
+        const onlineTotal = filteredOnline.reduce((sum, item) => sum + (Number(item.total_belanja) || 0), 0);
+
+        // Hitung Onsite
+        const onsiteCount = filteredOnsite.length;
+        const onsiteTotal = filteredOnsite.reduce((sum, item) => sum + (Number(item.total_belanja) || 0), 0);
+
+        // Hitung Grand Total
+        const grandCount = onlineCount + onsiteCount;
+        const grandTotal = onlineTotal + onsiteTotal;
+
+        // Update UI
+        document.getElementById('onlineCount').textContent = onlineCount;
+        document.getElementById('onlineTotal').textContent = formatRupiah(onlineTotal);
+
+        // Populate Table Online
+        const tableBody = document.getElementById('onlineTableBody');
+        tableBody.innerHTML = '';
+        
+        if (filteredOnline && filteredOnline.length > 0) {
+          filteredOnline.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${item.id_transaksi || '-'}</td>
+              <td>${item.tanggal || '-'}</td>
+              <td>${item.nama_customer || '-'}</td>
+              <td style="text-align: right;">${formatRupiah(item.total_belanja || 0)}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+        } else {
+          tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada data transaksi online.</td></tr>';
+        }
+
+        document.getElementById('onsiteCount').textContent = onsiteCount;
+        document.getElementById('onsiteTotal').textContent = formatRupiah(onsiteTotal);
+
+        // Populate Table Onsite
+        const onsiteTableBody = document.getElementById('onsiteTableBody');
+        onsiteTableBody.innerHTML = '';
+        
+        if (filteredOnsite && filteredOnsite.length > 0) {
+          filteredOnsite.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${item.id_transaksi || '-'}</td>
+              <td>${item.tanggal || '-'}</td>
+              <td>${item.nama_customer || '-'}</td>
+              <td style="text-align: right;">${formatRupiah(item.total_belanja || 0)}</td>
+            `;
+            onsiteTableBody.appendChild(row);
+          });
+        } else {
+          onsiteTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Tidak ada data transaksi onsite.</td></tr>';
+        }
+
+        document.getElementById('grandCount').textContent = grandCount;
+        document.getElementById('grandTotal').textContent = formatRupiah(grandTotal);
+      }
+
+      // Event Listeners
+      document.getElementById('monthFilter').addEventListener('change', renderData);
+      document.getElementById('btnResetFilter').addEventListener('click', () => {
+        document.getElementById('monthFilter').value = '';
+        renderData();
+      });
+
+      loadData();
+
+      // === Export PDF Logic ===
+      document.getElementById('btnExportPdf').addEventListener('click', function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.text('Rekapitulasi Pemasukan - Nerai Coffee', 14, 22);
+        
+        doc.setFontSize(10);
+        const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+
+        // Summary Table
+        const onlineCount = document.getElementById('onlineCount').textContent;
+        const onlineTotal = document.getElementById('onlineTotal').textContent;
+        const onsiteCount = document.getElementById('onsiteCount').textContent;
+        const onsiteTotal = document.getElementById('onsiteTotal').textContent;
+        const grandTotal = document.getElementById('grandTotal').textContent;
+        const grandCount = document.getElementById('grandCount').textContent;
+
+        const summaryData = [
+          ['Kategori', 'Jumlah Transaksi', 'Total Pemasukan'],
+          ['Online', onlineCount, onlineTotal],
+          ['On Site', onsiteCount, onsiteTotal],
+          ['Total Keseluruhan', grandCount, grandTotal]
+        ];
+
+        doc.autoTable({
+          startY: 35,
+          head: [summaryData[0]],
+          body: summaryData.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [193, 124, 74] }
+        });
+
+        // Helper to parse table
+        const parseTable = (tbodyId) => {
+          const rows = [];
+          document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+             const tds = tr.querySelectorAll('td');
+             if(tds.length > 1) { // Skip loading/empty message
+               rows.push([tds[0].innerText, tds[1].innerText, tds[2].innerText, tds[3].innerText]);
+             }
+          });
+          return rows;
+        };
+
+        // Table Online
+        let finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.text('Rincian Transaksi Online', 14, finalY);
+        
+        doc.autoTable({
+          startY: finalY + 5,
+          head: [['Id Transaksi', 'Tanggal', 'Nama Customer', 'Total Belanja']],
+          body: parseTable('onlineTableBody'),
+          theme: 'striped',
+          headStyles: { fillColor: [37, 26, 18] }
+        });
+
+        // Table Onsite
+        finalY = doc.lastAutoTable.finalY + 10;
+        doc.text('Rincian Transaksi On Site', 14, finalY);
+        
+        doc.autoTable({
+          startY: finalY + 5,
+          head: [['Id Transaksi', 'Tanggal', 'Nama Customer', 'Total Belanja']],
+          body: parseTable('onsiteTableBody'),
+          theme: 'striped',
+          headStyles: { fillColor: [37, 26, 18] }
+        });
+
+        doc.save('Laporan_Pemasukan_Nerai.pdf');
+      });
+    });
+  </script>
+</body>
+</html>

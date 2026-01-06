@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pengeluaran - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #91a9a1;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,5,3,0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #251a12;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #e6b989;
+    }
+
+    /* ================== CONTENT ================== */
+    .main-container {
+      padding: 100px 2rem 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #000000;
+      margin-bottom: 2rem;
+      font-size: 2.2rem;
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      background: #ffffff;
+      padding: 1.5rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .btn-group {
+      display: contents;
+    }
+
+    .btn {
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      transition: transform 0.2s, opacity 0.2s;
+      width: 100%;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
+
+    .btn-add {
+      background: #43e97b;
+      color: #0f3e27;
+    }
+
+    .btn-export {
+      background: #4facfe;
+      color: #fff;
+    }
+
+    .btn-back {
+      background: #333;
+      color: #fff;
+    }
+
+    .search-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-container input {
+      width: 100%;
+      padding: 0.8rem 2.5rem 0.8rem 2.5rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .search-container i {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #888;
+    }
+
+    .search-container .reset-btn {
+      left: auto;
+      right: 10px;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* Table */
+    .table-wrapper {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      overflow-x: auto;
+      margin-bottom: 2rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1000px;
+      border-radius: 6px;
+    }
+
+    thead tr {
+      background: #1a120c;
+      color: #e6b989;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      font-weight: 600;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #1a120c;
+    }
+
+    th:first-child { border-top-left-radius: 6px; }
+    th:last-child { border-top-right-radius: 6px; }
+
+    tbody tr:hover {
+      background: #f9f9f9;
+    }
+
+    /* Total Card */
+    .total-card {
+      background: #05443a;
+      border-radius: 16px;
+      padding: 2rem;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .total-label {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .total-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #d6f510;
+    }
+
+    /* Action Icons */
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      margin: 0 0.3rem;
+      transition: transform 0.2s;
+    }
+    .icon-btn.edit { color: #e6b989; }
+    .icon-btn.delete { color: #ff6b6b; }
+    .icon-btn:hover { transform: scale(1.2); }
+
+    /* Charts */
+    .charts-wrapper {
+      display: block;
+      margin-top: 2rem;
+    }
+    .chart-card {
+      background: #1a120c;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      border: 1px solid #3a2a1f;
+    }
+
+    /* ================== MODAL STYLES ================== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: #1a120c;
+      padding: 2rem;
+      border: 1px solid #3a2a1f;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+      color: #f8f1e9;
+    }
+
+    .close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      color: #c9b29a;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close:hover { color: #e6b989; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #c9b29a; font-size: 0.9rem; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.8rem;
+      background: #251a12;
+      border: 1px solid #3a2a1f;
+      border-radius: 6px;
+      color: #f8f1e9;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #c17c4a; }
+    .form-group input[readonly] { background: #150e09; color: #777; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <!-- Hamburger removed as requested -->
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    <h1>Pengeluaran Usaha</h1>
+
+    <div class="action-bar">
+      <div class="btn-group">
+        <button class="btn btn-add" id="btnAddExpense"><i class="fas fa-plus"></i> Tambah Pengeluaran</button>
+        <button class="btn btn-export" id="btnExport"><i class="fas fa-file-export"></i> Export</button>
+        <a href="dashboard.html" class="btn btn-back"><i class="fas fa-arrow-left"></i> Kembali Ke Dashboard</a>
+      </div>
+      <div class="search-container">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Cari pengeluaran...">
+        <i class="fas fa-times reset-btn" id="resetSearchBtn"></i>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Id Pengeluaran</th>
+            <th>Tanggal</th>
+            <th>Nama Barang/Jasa</th>
+            <th>Berat Jenis</th>
+            <th>Harga Satuan</th>
+            <th>Jumlah Beli</th>
+            <th>Total</th>
+            <th>Purchaser</th>
+            <th>Upload Nota</th>
+            <th style="text-align: center;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="expenseTableBody">
+          <!-- Contoh Data Kosong / Placeholder -->
+          <tr>
+            <td colspan="10" style="text-align:center; color:#888; padding: 2rem;">Belum ada data pengeluaran</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="total-card">
+      <div class="total-label">Total Pengeluaran Usaha</div>
+      <div class="total-value">Rp 0</div>
+    </div>
+
+    <div class="charts-wrapper">
+      <div class="chart-card">
+        <h3 style="text-align:center; margin-bottom:1rem; color:#e6b989;">Statistik Bulanan</h3>
+        <canvas id="expenseBarChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Pengeluaran -->
+  <div id="expenseModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle" style="color: #e6b989; margin-bottom: 1.5rem; text-align: center;">Form Pengeluaran</h2>
+      
+      <form id="expenseForm">
+        <div class="form-group">
+          <label>Id Pengeluaran</label>
+          <input type="text" id="expenseId" placeholder="Otomatis / Input Manual">
+        </div>
+        
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="expenseDate" required>
+        </div>
+
+        <div class="form-group">
+          <label>Nama Barang/Jasa</label>
+          <input type="text" id="itemName" placeholder="Contoh: Biji Kopi Arabica" required>
+        </div>
+
+        <div class="form-group">
+          <label>Berat Jenis</label>
+          <select id="itemType">
+            <option value="">Pilih Satuan</option>
+            <option value="Kg">Kg</option>
+            <option value="Box">Box</option>
+            <option value="Kotak">Kotak</option>
+            <option value="Botol">Botol</option>
+            <option value="bungkus">bungkus</option>
+            <option value="Gram">Gram</option>
+            <option value="Ons">Ons</option>
+            <option value="Unit">Unit</option>
+            <option value="Shift">Shift</option>
+            <option value="Paket">Paket</option>
+            <option value="Batang">Batang</option>
+            <option value="Lembar">Lembar</option>
+            <option value="Ekor">Ekor</option>
+            <option value="Ikat">Ikat</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Harga Satuan (Rp)</label>
+            <input type="number" id="itemPrice" placeholder="0" required>
+          </div>
+          <div class="form-group">
+            <label>Jumlah Beli</label>
+            <input type="number" id="itemQty" placeholder="1" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Total (Rp)</label>
+          <input type="number" id="itemTotal" placeholder="0" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Purchaser (Penanggung Jawab)</label>
+          <input type="text" id="purchaser" placeholder="Nama Pembeli">
+        </div>
+
+        <div class="form-group">
+          <label>Upload Nota</label>
+          <input type="file" id="notaUpload" accept="image/*,.pdf">
+        </div>
+
+        <button type="submit" id="btnSubmitExpense" class="btn btn-add" style="margin-top: 1.5rem;">Konfirmasi</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Hapus -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h3 style="color: #e6b989; margin-bottom: 1rem;">Konfirmasi Hapus</h3>
+      <p style="margin-bottom: 2rem; color: #f8f1e9;">Apakah anda ingin menghapus data ini..?</p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button id="btnConfirmDelete" class="btn" style="background: #ff6b6b; color: white;">Hapus</button>
+        <button id="btnCancelDelete" class="btn" style="background: #333; color: white;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Init Supabase Client Global
+    const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // === SUPABASE: Ambil logo & nama usaha (Sama seperti Dashboard) ===
+    document.addEventListener('DOMContentLoaded', async function() {
+      const TABLE_NAME = 'tabelprofil';
+      const BUCKET_NAME = 'aset';
+
+      const navbarLogo = document.getElementById('navbarLogo');
+      const navbarBusinessName = document.getElementById('navbarBusinessName');
+
+      try {
+        const { data, error } = await supabaseClient
+          .from(TABLE_NAME)
+          .select('nama_usaha, logo')
+          .limit(1)
+          .single();
+
+        if (data) {
+          const namaUsaha = data.nama_usaha || 'NERAI COFFEE';
+          navbarBusinessName.textContent = namaUsaha.toUpperCase();
+
+          if (data.logo) {
+            const { data: publicData } = supabaseClient.storage
+              .from(BUCKET_NAME)
+              .getPublicUrl(data.logo);
+
+            navbarLogo.src = publicData.publicUrl;
+          }
+        }
+      } catch (err) {
+        console.error('Gagal memuat info usaha:', err);
+      }
+    });
+
+    // Global variables
+    let expensesData = [];
+    let isEditMode = false;
+    let deleteTargetId = null;
+    let barChartInstance = null;
+
+    // === Load Data Pengeluaran ===
+    async function loadExpenses() {
+      const tableBody = document.getElementById('expenseTableBody');
+      const totalValueEl = document.querySelector('.total-value');
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('pengeluaran')
+          .select('*')
+          .order('tanggal', { ascending: false });
+
+        if (error) throw error;
+
+        tableBody.innerHTML = '';
+        expensesData = data || [];
+        let total = 0;
+
+        if (data && data.length > 0) {
+          data.forEach(item => {
+            total += Number(item.total_belanja || 0);
+            
+            let notaLink = '-';
+            if (item.nota) {
+              notaLink = `<a href="${item.nota}" target="_blank" style="color: #c17c4a; text-decoration: none; font-weight: 600;"><i class="fas fa-eye"></i> Lihat</a>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${item.id_pengeluaran}</td>
+              <td>${item.tanggal}</td>
+              <td>${item.nama_barang}</td>
+              <td>${item.berat_jenis || '-'}</td>
+              <td>Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}</td>
+              <td>${item.jumlah}</td>
+              <td>Rp ${Number(item.total_belanja).toLocaleString('id-ID')}</td>
+              <td>${item.purchaser || '-'}</td>
+              <td style="text-align: center;">${notaLink}</td>
+              <td style="text-align: center;">
+                <button class="icon-btn edit" onclick="openEditModal('${item.id_pengeluaran}')"><i class="fas fa-pencil-alt"></i></button>
+                <button class="icon-btn delete" onclick="openDeleteModal('${item.id_pengeluaran}')"><i class="fas fa-trash"></i></button>
+              </td>
+            `;
+            tableBody.appendChild(tr);
+          });
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#888; padding: 2rem;">Belum ada data pengeluaran</td></tr>`;
+        }
+
+        totalValueEl.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+        renderCharts(expensesData);
+
+      } catch (err) {
+        console.error('Gagal memuat pengeluaran:', err);
+      }
+    }
+
+    function renderCharts(data) {
+      // 1. Prepare Data for Bar Chart (Monthly)
+      const monthlyTotals = new Array(12).fill(0);
+      const currentYear = new Date().getFullYear();
+
+      data.forEach(item => {
+        const date = new Date(item.tanggal);
+        if (date.getFullYear() === currentYear) {
+          monthlyTotals[date.getMonth()] += Number(item.total_belanja || 0);
+        }
+      });
+
+      // 2. Render Bar Chart
+      const ctxBar = document.getElementById('expenseBarChart').getContext('2d');
+      if (barChartInstance) barChartInstance.destroy();
+
+      barChartInstance = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+          datasets: [{
+            label: `Pengeluaran ${currentYear}`,
+            data: monthlyTotals,
+            backgroundColor: '#c17c4a',
+            borderColor: '#e6b989',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#251a12',
+              titleColor: '#e6b989',
+              bodyColor: '#fff',
+              borderColor: '#3a2a1f',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              ticks: { 
+                color: '#c9b29a',
+                callback: v => 'Rp ' + (v/1000).toLocaleString('id-ID') + 'k' 
+              },
+              grid: { color: '#3a2a1f' }
+            },
+            x: {
+              ticks: { color: '#c9b29a' },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+    
+    // Load saat awal
+    loadExpenses();
+
+    // === Logic Reset Pencarian ===
+    const searchInput = document.getElementById('searchInput');
+    const resetBtn = document.getElementById('resetSearchBtn');
+
+    searchInput.addEventListener('input', function() {
+      resetBtn.style.display = this.value ? 'block' : 'none';
+    });
+
+    resetBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      resetBtn.style.display = 'none';
+      searchInput.focus();
+    });
+
+    // === Logic Modal Pengeluaran ===
+    const modal = document.getElementById("expenseModal");
+    const btnAdd = document.getElementById("btnAddExpense");
+    const spanClose = document.getElementsByClassName("close")[0];
+    const expenseForm = document.getElementById("expenseForm");
+    const modalTitle = document.getElementById("modalTitle");
+    const btnSubmitExpense = document.getElementById("btnSubmitExpense");
+
+    // Buka Modal
+    btnAdd.onclick = async function() {
+      isEditMode = false;
+      modalTitle.textContent = "Tambah Pengeluaran";
+      btnSubmitExpense.textContent = "Konfirmasi";
+      expenseForm.reset();
+      document.getElementById('expenseId').readOnly = false;
+      
+      modal.style.display = "flex";
+      // Set tanggal hari ini sebagai default
+      document.getElementById('expenseDate').valueAsDate = new Date();
+      
+      // Generate ID Pengeluaran Otomatis
+      const idField = document.getElementById('expenseId');
+      idField.value = "Memuat ID...";
+      
+      try {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).slice(-2);
+        const dateCode = `${dd}${mm}${yy}`;
+        const random3 = Math.floor(Math.random() * 900) + 100;
+
+        const { count } = await supabaseClient.from('pengeluaran').select('*', { count: 'exact', head: true });
+        const seq = (count || 0) + 1;
+
+        idField.value = `IDP-${dateCode}-${random3}.${seq}`;
+      } catch (err) {
+        console.error('Gagal generate ID:', err);
+        idField.value = `IDP-${Date.now()}`;
+      }
+    }
+
+    // Fungsi Buka Modal Edit
+    window.openEditModal = function(id) {
+      const item = expensesData.find(d => d.id_pengeluaran === id);
+      if (!item) return;
+
+      isEditMode = true;
+      modalTitle.textContent = "Edit Pengeluaran";
+      btnSubmitExpense.textContent = "Update";
+      
+      document.getElementById('expenseId').value = item.id_pengeluaran;
+      document.getElementById('expenseId').readOnly = true; // ID tidak boleh diubah saat edit
+      document.getElementById('expenseDate').value = item.tanggal;
+      document.getElementById('itemName').value = item.nama_barang;
+      document.getElementById('itemType').value = item.berat_jenis;
+      document.getElementById('itemPrice').value = item.harga_satuan;
+      document.getElementById('itemQty').value = item.jumlah;
+      document.getElementById('itemTotal').value = item.total_belanja;
+      document.getElementById('purchaser').value = item.purchaser;
+      // Nota tidak bisa di-set value-nya karena input file, biarkan kosong (jika kosong berarti tidak update nota)
+      document.getElementById('notaUpload').value = "";
+
+      modal.style.display = "flex";
+    }
+
+    // Tutup Modal
+    spanClose.onclick = function() {
+      modal.style.display = "none";
+    }
+
+    // Tutup jika klik di luar modal
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+      if (event.target == document.getElementById("deleteModal")) {
+        document.getElementById("deleteModal").style.display = "none";
+      }
+    }
+
+    // Hitung Total Otomatis
+    const priceInput = document.getElementById('itemPrice');
+    const qtyInput = document.getElementById('itemQty');
+    const totalInput = document.getElementById('itemTotal');
+
+    function calculateTotal() {
+      const price = parseFloat(priceInput.value) || 0;
+      const qty = parseFloat(qtyInput.value) || 0;
+      totalInput.value = price * qty;
+    }
+
+    priceInput.addEventListener('input', calculateTotal);
+    qtyInput.addEventListener('input', calculateTotal);
+
+    // === Handle Submit Form Pengeluaran ===
+    expenseForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const btnSubmit = this.querySelector('button[type="submit"]');
+      const originalText = btnSubmit.textContent;
+      btnSubmit.textContent = 'Menyimpan...';
+      btnSubmit.disabled = true;
+
+      try {
+        const id_pengeluaran = document.getElementById('expenseId').value;
+        const tanggal = document.getElementById('expenseDate').value;
+        const nama_barang = document.getElementById('itemName').value;
+        const berat_jenis = document.getElementById('itemType').value;
+        const harga_satuan = document.getElementById('itemPrice').value;
+        const jumlah = document.getElementById('itemQty').value;
+        const total_belanja = document.getElementById('itemTotal').value;
+        const purchaser = document.getElementById('purchaser').value;
+        const notaFile = document.getElementById('notaUpload').files[0];
+
+        let notaUrl = null;
+
+        if (notaFile) {
+          const fileExt = notaFile.name.split('.').pop();
+          const fileName = `nota/${id_pengeluaran}_${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabaseClient.storage.from('aset').upload(fileName, notaFile);
+          if (uploadError) throw uploadError;
+          
+          const { data: urlData } = supabaseClient.storage.from('aset').getPublicUrl(fileName);
+          notaUrl = urlData.publicUrl;
+        }
+
+        const payload = {
+          id_pengeluaran, tanggal, nama_barang, berat_jenis, harga_satuan, jumlah, total_belanja, purchaser
+        };
+        
+        if (notaUrl) {
+          payload.nota = notaUrl;
+        }
+
+        let error;
+        if (isEditMode) {
+          // Update
+          ({ error } = await supabaseClient.from('pengeluaran').update(payload).eq('id_pengeluaran', id_pengeluaran));
+        } else {
+          // Insert
+          if (notaUrl) payload.nota = notaUrl;
+          ({ error } = await supabaseClient.from('pengeluaran').insert([payload]));
+        }
+
+        if (error) throw error;
+
+        alert(isEditMode ? 'Data berhasil diupdate!' : 'Data pengeluaran berhasil disimpan!');
+        modal.style.display = "none";
+        expenseForm.reset();
+        loadExpenses(); // Refresh tabel
+        
+      } catch (err) {
+        console.error('Error saving expense:', err);
+        alert('Gagal menyimpan data: ' + err.message);
+      } finally {
+        btnSubmit.textContent = originalText;
+        btnSubmit.disabled = false;
+      }
+    });
+
+    // === Logic Hapus Data ===
+    const deleteModal = document.getElementById("deleteModal");
+    const btnConfirmDelete = document.getElementById("btnConfirmDelete");
+    const btnCancelDelete = document.getElementById("btnCancelDelete");
+
+    window.openDeleteModal = function(id) {
+      deleteTargetId = id;
+      deleteModal.style.display = "flex";
+    }
+
+    btnCancelDelete.onclick = function() {
+      deleteModal.style.display = "none";
+      deleteTargetId = null;
+    }
+
+    btnConfirmDelete.onclick = async function() {
+      if (!deleteTargetId) return;
+      
+      try {
+        const { error } = await supabaseClient.from('pengeluaran').delete().eq('id_pengeluaran', deleteTargetId);
+        if (error) throw error;
+
+        alert('Data berhasil dihapus.');
+        deleteModal.style.display = "none";
+        loadExpenses();
+      } catch (err) {
+        console.error('Gagal menghapus:', err);
+        alert('Gagal menghapus data: ' + err.message);
+      }
+    }
+
+    // === Logic Export PDF ===
+    document.getElementById('btnExport').addEventListener('click', function() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // 1. Header
+      doc.setFontSize(18);
+      doc.text('Laporan Pengeluaran - Nerai Coffee', 14, 22);
+      
+      doc.setFontSize(10);
+      const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+
+      // 2. Total Card
+      const totalValue = document.querySelector('.total-value').textContent;
+      doc.setFillColor(5, 68, 58); // Warna background card (#05443a)
+      doc.rect(14, 35, 182, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.text(`Total Pengeluaran Usaha: ${totalValue}`, 20, 45);
+      doc.setTextColor(0, 0, 0); // Reset text color
+
+      // 3. Chart (Statistik)
+      let finalY = 60;
+      const canvas = document.getElementById('expenseBarChart');
+      if (canvas) {
+        const chartImg = canvas.toDataURL('image/png', 1.0);
+        const imgProps = doc.getImageProperties(chartImg);
+        const pdfWidth = 182;
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        doc.text('Statistik Bulanan', 14, finalY);
+        // Background hitam untuk chart agar text axis terlihat (karena dark mode)
+        doc.setFillColor(26, 18, 12); 
+        doc.rect(14, finalY + 2, pdfWidth, pdfHeight, 'F');
+        doc.addImage(chartImg, 'PNG', 14, finalY + 2, pdfWidth, pdfHeight);
+        
+        finalY += pdfHeight + 15;
+      }
+
+      // 4. Tabel Data
+      const tableColumn = ["ID", "Tanggal", "Barang/Jasa", "Berat", "Harga", "Jml", "Total", "Purchaser"];
+      const tableRows = expensesData.map(item => [
+        item.id_pengeluaran,
+        item.tanggal,
+        item.nama_barang,
+        item.berat_jenis || '-',
+        `Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}`,
+        item.jumlah,
+        `Rp ${Number(item.total_belanja).toLocaleString('id-ID')}`,
+        item.purchaser || '-'
+      ]);
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: finalY,
+        theme: 'grid',
+        headStyles: { fillColor: [26, 18, 12] },
+        styles: { fontSize: 8 }
+      });
+
+      doc.save('Laporan_Pengeluaran_Nerai.pdf');
+    });
+  </script>
+
+</body>
+</html>
