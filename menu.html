@@ -179,6 +179,13 @@
       .action-bar { flex-direction: column; align-items: stretch; }
       .btn-group { flex-direction: column; }
       .btn { width: 100%; justify-content: center; }
+      .form-actions { flex-direction: column; }
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     /* Modal Styles */
@@ -365,7 +372,7 @@
           <img id="imagePreview" src="" alt="Preview" style="display: none; width: 100%; margin-top: 10px; border-radius: 6px; border: 1px solid #3a2a1f; max-height: 200px; object-fit: cover;">
         </div>
         
-        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+        <div class="form-actions">
           <button type="button" class="btn btn-primary" id="btnSave" style="flex: 1; justify-content: center;">Tambah Menu</button>
           <button type="button" class="btn" id="btnUpdate" style="background: #c17c4a; color: white; border:none; flex: 1; justify-content: center;">Update</button>
           <button type="button" class="btn btn-secondary" id="btnCancel" style="flex: 1; justify-content: center;">Cancel</button>
