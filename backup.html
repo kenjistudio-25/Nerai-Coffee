@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Backup & Reset Data - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #91a9a1;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,5,3,0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #251a12;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #e6b989;
+    }
+
+    /* ================== CONTENT ================== */
+    .container {
+      padding: 100px 2rem 4rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #000000;
+      margin-bottom: 2rem;
+      font-size: 2.2rem;
+      text-align: center;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      border: 1px solid #e0e0e0;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .card-desc {
+      color: #666;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .btn {
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    .btn-backup { background: #27ae60; color: white; }
+    .btn-backup:hover { background: #219150; }
+
+    .btn-reset { background: #c0392b; color: white; }
+    .btn-reset:hover { background: #a93226; }
+
+    .btn-back { background: #333; color: white; margin-top: 2rem; }
+    .btn-back:hover { background: #000; }
+
+    /* Table Styles */
+    .backup-table-container {
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+    .backup-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+    .backup-table th, .backup-table td { padding: 0.75rem; border-bottom: 1px solid #eee; }
+    .backup-table th { background-color: #f8f9fa; font-weight: 600; color: #333; white-space: nowrap; }
+    .backup-table td { color: #555; }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .form-group { margin-bottom: 1.2rem; text-align: left; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-family: inherit;
+    }
+
+    /* Restore Modal Styles */
+    .restore-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .restore-card {
+      background: #f8f9fa;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .restore-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-color: #c17c4a;
+      background: #fff;
+    }
+    .restore-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+    .restore-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+    .restore-card p {
+      font-size: 0.85rem;
+      color: #666;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Backup & Reset Data</h1>
+
+    <div class="card-grid">
+      <!-- Backup Card -->
+      <div class="card">
+        <i class="fas fa-cloud-download-alt card-icon" style="color: #27ae60;"></i>
+        <div class="card-title">Backup Data</div>
+        <p class="card-desc">
+          Unduh salinan data transaksi, menu, dan laporan keuangan Anda dalam format JSON/CSV untuk keamanan data.
+        </p>
+        
+        <div style="display: flex; gap: 1rem;">
+          <button class="btn btn-backup" id="btnOpenBackupModal" style="flex: 1; justify-content: center;">
+            <i class="fas fa-save"></i> Backup Data
+          </button>
+          <button class="btn" id="btnRestoreData" style="background: #e67e22; color: white; flex: 1; justify-content: center;">
+            <i class="fas fa-history"></i> Restore Data
+          </button>
+        </div>
+      </div>
+
+      <!-- Reset Card -->
+      <div class="card">
+        <i class="fas fa-exclamation-triangle card-icon" style="color: #c0392b;"></i>
+        <div class="card-title">Reset Data</div>
+        <p class="card-desc">
+          Hapus semua data transaksi dan laporan. Tindakan ini tidak dapat dibatalkan. Harap berhati-hati.
+        </p>
+        <button class="btn btn-reset" id="btnOpenResetModal">
+          <i class="fas fa-trash-alt"></i> Reset Data
+        </button>
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="dashboard.html" class="btn btn-back">
+        <i class="fas fa-arrow-left"></i> Kembali Ke Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Modal Backup -->
+  <div id="backupModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeBackupModal">&times;</span>
+      <h2 style="margin-bottom: 1.5rem; text-align: center; color: #333;">Form Backup Data</h2>
+      
+      <form id="backupForm">
+        <div class="form-group">
+          <label>Tanggal Backup</label>
+          <input type="date" id="backupDate" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Nama Backup</label>
+          <select id="backupName" required>
+            <option value="">Pilih Jenis Backup</option>
+            <option value="Transaksi Pemasukan">Transaksi Pemasukan</option>
+            <option value="Transaksi Pengeluaran">Transaksi Pengeluaran</option>
+            <option value="Daftar Menu">Daftar Menu</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Tahun</label>
+          <input type="number" id="backupYear" placeholder="2026" required>
+        </div>
+
+        <div class="form-group">
+          <label>File CSV</label>
+          <button type="button" id="btnDownloadCsv" class="btn" style="width: 100%; background: #251a12; color: #c9b29a; border: 1px solid #3a2a1f; justify-content: center;">
+            <i class="fas fa-file-csv"></i> Download CSV
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label>File PDF</label>
+          <button type="button" id="btnDownloadPdf" class="btn" style="width: 100%; background: #251a12; color: #c9b29a; border: 1px solid #3a2a1f; justify-content: center;">
+            <i class="fas fa-file-pdf"></i> Download PDF
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Reset Data -->
+  <div id="resetModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <span class="close" id="closeResetModal">&times;</span>
+      <h2 style="margin-bottom: 1rem; color: #c0392b;">Konfirmasi Reset Data</h2>
+      <p style="margin-bottom: 1.5rem; color: #555; font-size: 0.95rem;">
+        Tindakan ini akan menghapus seluruh data transaksi dan laporan secara permanen. Masukkan Password Utama untuk melanjutkan.
+      </p>
+      
+      <form id="resetForm">
+        <div class="form-group">
+          <label>Password Utama</label>
+          <input type="password" id="resetPassword" placeholder="Masukkan password..." required>
+        </div>
+
+        <button type="submit" class="btn btn-reset" style="width: 100%; justify-content: center; margin-top: 1rem;">
+          Konfirmasi Reset
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Restore Data -->
+  <div id="restoreModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <span class="close" id="closeRestoreModal">&times;</span>
+      <h2 style="margin-bottom: 1.5rem; text-align: center; color: #333;">Pilih Data untuk Restore</h2>
+      
+      <div class="restore-grid">
+        <div class="restore-card" onclick="triggerRestore('pemasukan')">
+          <i class="fas fa-arrow-up restore-icon" style="color: #27ae60;"></i>
+          <h3>Data Pemasukan</h3>
+          <p>Restore data transaksi pemasukan dari file CSV.</p>
+        </div>
+        <div class="restore-card" onclick="triggerRestore('pengeluaran')">
+          <i class="fas fa-arrow-down restore-icon" style="color: #c0392b;"></i>
+          <h3>Data Pengeluaran</h3>
+          <p>Restore data transaksi pengeluaran dari file CSV.</p>
+        </div>
+        <div class="restore-card" onclick="triggerRestore('menu')">
+          <i class="fas fa-utensils restore-icon" style="color: #e67e22;"></i>
+          <h3>Daftar Menu</h3>
+          <p>Restore daftar menu makanan & minuman dari file CSV.</p>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <button class="btn btn-back" id="btnCancelRestore" style="margin-top: 0; background: #555;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Input for Restore -->
+  <input type="file" id="restoreFileInput" accept=".csv" style="display: none;">
+
+  <script>
+    // Supabase Setup
+    const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Load Logo & Name
+    async function loadBusinessInfo() {
+      try {
+        const { data } = await supabaseClient.from('tabelprofil').select('nama_usaha, logo').limit(1).single();
+        if (data) {
+          if (data.nama_usaha) document.getElementById('navbarBusinessName').textContent = data.nama_usaha.toUpperCase();
+          if (data.logo) {
+            const { data: publicData } = supabaseClient.storage.from('aset').getPublicUrl(data.logo);
+            document.getElementById('navbarLogo').src = publicData.publicUrl;
+          }
+        }
+      } catch (err) { console.error('Error loading info:', err); }
+    }
+    loadBusinessInfo();
+
+    // Modal Logic
+    const modal = document.getElementById("backupModal");
+    const btn = document.getElementById("btnOpenBackupModal");
+    const span = document.getElementById("closeBackupModal");
+    const form = document.getElementById("backupForm");
+
+    btn.onclick = function() {
+      modal.style.display = "flex";
+      // Set default date to today
+      document.getElementById('backupDate').valueAsDate = new Date();
+      document.getElementById('backupYear').value = new Date().getFullYear();
+    }
+
+    span.onclick = function() {
+      modal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+      if (event.target == resetModal) {
+        resetModal.style.display = "none";
+      }
+      if (event.target == document.getElementById("restoreModal")) {
+        document.getElementById("restoreModal").style.display = "none";
+      }
+    }
+
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      alert("Data backup dikonfirmasi (Simulasi).");
+      modal.style.display = "none";
+    }
+
+    // Reset Modal Logic
+    const resetModal = document.getElementById("resetModal");
+    const btnReset = document.getElementById("btnOpenResetModal");
+    const spanReset = document.getElementById("closeResetModal");
+    const resetForm = document.getElementById("resetForm");
+
+    btnReset.onclick = function() {
+      resetModal.style.display = "flex";
+      document.getElementById("resetPassword").value = "";
+    }
+
+    spanReset.onclick = function() {
+      resetModal.style.display = "none";
+    }
+
+    resetForm.onsubmit = async function(e) {
+      e.preventDefault();
+      const passwordInput = document.getElementById("resetPassword").value;
+      const btn = resetForm.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
+      
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+      btn.disabled = true;
+
+      try {
+        // 1. Verifikasi Password dari tabelprofil
+        const { data: profileData, error: profileError } = await supabaseClient
+            .from('tabelprofil')
+            .select('password')
+            .limit(1)
+            .maybeSingle();
+        
+        if (profileError) throw new Error('Gagal memverifikasi password (Database Error).');
+        
+        // Jika data kosong (baru reset) atau password DB kosong, gunakan default 'admin123'
+        const dbPassword = (profileData && profileData.password) ? profileData.password : 'admin123';
+        
+        if (passwordInput !== dbPassword) {
+            throw new Error('Password Utama salah!');
+        }
+
+        // 2. Hapus Data dari Semua Tabel
+        // Menggunakan filter .neq('kolom_kunci', 'nilai_mustahil') atau .gt('id', 0) untuk menghapus semua baris
+        await supabaseClient.from('customeronsite').delete().neq('id_transaksi', '0');
+        await supabaseClient.from('pemasukan').delete().neq('id_transaksi', '0');
+        await supabaseClient.from('pemasukanonsitesementara').delete().neq('id_item', '0');
+        await supabaseClient.from('pengeluaran').delete().neq('id_pengeluaran', '0');
+        await supabaseClient.from('tabel pemasukan sementara').delete().neq('id_customer', '0');
+        await supabaseClient.from('tabelcustomer').delete().neq('id_order', '0');
+        await supabaseClient.from('tabeljadwal').delete().neq('tanggal', '1900-01-01');
+        await supabaseClient.from('tabelmenu').delete().gt('id', 0);
+        await supabaseClient.from('tabelorder').delete().neq('id_item', '0');
+        await supabaseClient.from('tabelrekening').delete().gt('id', 0);
+        
+        // 3. Reset Tabel Profil (Hapus Semua Data)
+        const { error: deleteProfileError } = await supabaseClient
+            .from('tabelprofil')
+            .delete()
+            .not('id', 'is', null); // Menghapus semua baris (Safe for UUID)
+        
+        if (deleteProfileError) throw deleteProfileError;
+
+        alert("Seluruh data pada aplikasi ini berhasil di reset. Silahkan Login dengan username dan password default");
+        window.location.href = 'index.html?action=login';
+
+      } catch (err) {
+        console.error(err);
+        alert('Gagal melakukan reset: ' + err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // Logic Download CSV
+    document.getElementById('btnDownloadCsv').addEventListener('click', async function() {
+      const backupType = document.getElementById('backupName').value;
+      const btn = this;
+      const originalText = btn.innerHTML;
+
+      if (!backupType) {
+        alert('Silakan pilih Jenis Backup terlebih dahulu.');
+        return;
+      }
+
+      try {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunduh...';
+        btn.disabled = true;
+
+        let data = [];
+        let filename = '';
+
+        if (backupType === 'Transaksi Pemasukan') {
+          const { data: res, error } = await supabaseClient
+            .from('pemasukan')
+            .select('*')
+            .order('tanggal', { ascending: false });
+          if (error) throw error;
+          data = res;
+          filename = `Backup_Pemasukan_${new Date().toISOString().slice(0,10)}.csv`;
+        } else if (backupType === 'Transaksi Pengeluaran') {
+          const { data: res, error } = await supabaseClient
+            .from('pengeluaran')
+            .select('*')
+            .order('tanggal', { ascending: false });
+          if (error) throw error;
+          data = res;
+          filename = `Backup_Pengeluaran_${new Date().toISOString().slice(0,10)}.csv`;
+        } else if (backupType === 'Daftar Menu') {
+          const { data: res, error } = await supabaseClient
+            .from('tabelmenu')
+            .select('*')
+            .order('nama_menu', { ascending: true });
+          if (error) throw error;
+          data = res;
+          filename = `Backup_Menu_${new Date().toISOString().slice(0,10)}.csv`;
+        }
+
+        if (!data || data.length === 0) throw new Error('Tidak ada data untuk diexport.');
+
+        // Convert JSON to CSV
+        const headers = Object.keys(data[0]).join(',');
+        const rows = data.map(row => Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+        const csvContent = [headers, ...rows].join('\n');
+
+        // Trigger Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        alert("File sudah berhasil di back-up. Simpan File CVS untuk melakukan Restore data anda nanti");
+
+      } catch (err) {
+        alert('Gagal export CSV: ' + err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Logic Download PDF
+    document.getElementById('btnDownloadPdf').addEventListener('click', async function() {
+      const backupType = document.getElementById('backupName').value;
+      const btn = this;
+      const originalText = btn.innerHTML;
+
+      if (!backupType) {
+        alert('Silakan pilih Jenis Backup terlebih dahulu.');
+        return;
+      }
+
+      try {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunduh...';
+        btn.disabled = true;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        if (backupType === 'Transaksi Pemasukan') {
+          // Fetch Data Pemasukan
+          const { data, error } = await supabaseClient
+            .from('pemasukan')
+            .select('*')
+            .order('tanggal', { ascending: false });
+
+          if (error) throw error;
+          if (!data || data.length === 0) throw new Error('Tidak ada data pemasukan.');
+
+          // Calculate Summaries
+          const onlineData = data.filter(d => d.nama_customer !== 'Onsite');
+          const onsiteData = data.filter(d => d.nama_customer === 'Onsite');
+
+          const onlineTotal = onlineData.reduce((sum, item) => sum + (Number(item.total_belanja) || 0), 0);
+          const onsiteTotal = onsiteData.reduce((sum, item) => sum + (Number(item.total_belanja) || 0), 0);
+          const grandTotal = onlineTotal + onsiteTotal;
+
+          const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+          // Header
+          doc.setFontSize(18);
+          doc.text('Rekapitulasi Pemasukan - Nerai Coffee', 14, 22);
+          doc.setFontSize(10);
+          doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+
+          // Summary Table
+          const summaryData = [
+            ['Kategori', 'Jumlah Transaksi', 'Total Pemasukan'],
+            ['Online', onlineData.length, formatRupiah(onlineTotal)],
+            ['On Site', onsiteData.length, formatRupiah(onsiteTotal)],
+            ['Total Keseluruhan', data.length, formatRupiah(grandTotal)]
+          ];
+
+          doc.autoTable({
+            startY: 35,
+            head: [summaryData[0]],
+            body: summaryData.slice(1),
+            theme: 'grid',
+            headStyles: { fillColor: [193, 124, 74] }
+          });
+
+          // Detail Table
+          const tableRows = data.map(item => [
+            item.id_transaksi || '-',
+            item.tanggal || '-',
+            item.nama_customer || '-',
+            formatRupiah(item.total_belanja || 0)
+          ]);
+
+          doc.text('Rincian Semua Transaksi', 14, doc.lastAutoTable.finalY + 10);
+          doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 15,
+            head: [['Id Transaksi', 'Tanggal', 'Nama Customer', 'Total Belanja']],
+            body: tableRows,
+            theme: 'striped',
+            headStyles: { fillColor: [37, 26, 18] }
+          });
+
+          doc.save(`Laporan_Pemasukan_${new Date().toISOString().slice(0,10)}.pdf`);
+
+        } else if (backupType === 'Transaksi Pengeluaran') {
+             // Fetch Data Pengeluaran
+             const { data, error } = await supabaseClient
+                .from('pengeluaran')
+                .select('*')
+                .order('tanggal', { ascending: false });
+
+             if (error) throw error;
+             if (!data || data.length === 0) throw new Error('Tidak ada data pengeluaran.');
+
+             const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+             const totalExpense = data.reduce((sum, item) => sum + (Number(item.total_belanja)||0), 0);
+
+             doc.setFontSize(18);
+             doc.text('Laporan Pengeluaran - Nerai Coffee', 14, 22);
+             doc.setFontSize(10);
+             doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+             
+             // Total Card Style (Match pengeluaran.html)
+             doc.setFillColor(5, 68, 58); // #05443a
+             doc.rect(14, 35, 182, 15, 'F');
+             doc.setTextColor(255, 255, 255);
+             doc.setFontSize(12);
+             doc.text(`Total Pengeluaran Usaha: ${formatRupiah(totalExpense)}`, 20, 45);
+             doc.setTextColor(0, 0, 0);
+
+             const tableRows = data.map(item => [
+                item.id_pengeluaran || '-',
+                item.tanggal || '-',
+                item.nama_barang || '-',
+                item.berat_jenis || '-',
+                formatRupiah(item.harga_satuan || 0),
+                item.jumlah || 0,
+                formatRupiah(item.total_belanja || 0),
+                item.purchaser || '-'
+             ]);
+
+             const tableColumn = ["ID", "Tanggal", "Barang/Jasa", "Berat", "Harga", "Jml", "Total", "Purchaser"];
+
+             doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 60,
+                theme: 'striped',
+                headStyles: { fillColor: [26, 18, 12] },
+                styles: { fontSize: 8 }
+             });
+
+             doc.save(`Laporan_Pengeluaran_${new Date().toISOString().slice(0,10)}.pdf`);
+
+        } else if (backupType === 'Daftar Menu') {
+             // Fetch Data Menu
+             const { data, error } = await supabaseClient
+                .from('tabelmenu')
+                .select('*')
+                .order('nama_menu', { ascending: true });
+
+             if (error) throw error;
+             if (!data || data.length === 0) throw new Error('Tidak ada data menu.');
+
+             const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+             doc.setFontSize(18);
+             doc.text('Daftar Menu - Nerai Coffee', 14, 22);
+             doc.setFontSize(10);
+             doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+             doc.text(`Total Menu: ${data.length} Item`, 14, 35);
+
+             const tableRows = data.map((item, index) => [
+                index + 1,
+                item.nama_menu || '-',
+                item.deskripsi || '-',
+                formatRupiah(item.harga || 0)
+             ]);
+
+             doc.autoTable({
+                head: [["No", "Nama Menu", "Deskripsi", "Harga"]],
+                body: tableRows,
+                startY: 40,
+                theme: 'striped',
+                headStyles: { fillColor: [107, 130, 124] },
+                styles: { fontSize: 10 },
+                columnStyles: {
+                  0: { cellWidth: 15, halign: 'center' }, // No
+                  1: { cellWidth: 50 }, // Nama Menu
+                  2: { cellWidth: 'auto' }, // Deskripsi (wrapping)
+                  3: { cellWidth: 40, halign: 'right' } // Harga (fixed agar tidak wrapping)
+                }
+             });
+
+             doc.save(`Laporan_Menu_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+
+        alert("File sudah berhasil di back-up. Simpan File CVS untuk melakukan Restore data anda nanti");
+
+      } catch (err) {
+        alert('Gagal export PDF: ' + err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Logic Restore Data
+    const restoreModal = document.getElementById('restoreModal');
+    const restoreFileInput = document.getElementById('restoreFileInput');
+    let currentRestoreType = '';
+
+    document.getElementById('btnRestoreData').addEventListener('click', function() {
+      restoreModal.style.display = 'flex';
+    });
+
+    document.getElementById('closeRestoreModal').onclick = function() {
+      restoreModal.style.display = 'none';
+    }
+    document.getElementById('btnCancelRestore').onclick = function() {
+      restoreModal.style.display = 'none';
+    }
+
+    window.triggerRestore = function(type) {
+      currentRestoreType = type;
+      restoreFileInput.value = ''; // Reset input
+      restoreFileInput.click();
+    }
+
+    restoreFileInput.addEventListener('change', async function() {
+      if (!this.files || !this.files[0]) return;
+      
+      const file = this.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = async function(e) {
+        const text = e.target.result;
+        try {
+          const rows = parseCSV(text);
+          if (rows.length === 0) throw new Error("File CSV kosong atau format salah.");
+
+          let tableName = '';
+          if (currentRestoreType === 'pemasukan') tableName = 'pemasukan';
+          else if (currentRestoreType === 'pengeluaran') tableName = 'pengeluaran';
+          else if (currentRestoreType === 'menu') tableName = 'tabelmenu';
+
+          // Proses Insert/Upsert ke Supabase
+          const { error } = await supabaseClient.from(tableName).upsert(rows);
+          
+          if (error) throw error;
+
+          alert(`Berhasil merestore ${rows.length} data ke tabel ${tableName}!`);
+          restoreModal.style.display = 'none';
+
+        } catch (err) {
+          console.error(err);
+          alert('Gagal restore: ' + err.message);
+        }
+      };
+      
+      reader.readAsText(file);
+    });
+
+    // Helper: Parse CSV (Handling Quoted Values)
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return []; // Header + minimal 1 row
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      const result = [];
+
+      for(let i=1; i<lines.length; i++) {
+        if(!lines[i].trim()) continue;
+        
+        const obj = {};
+        let row = lines[i];
+        
+        // Regex untuk split koma tapi abaikan koma dalam tanda kutip
+        // Format export kita: "val1","val2","val3"
+        const values = [];
+        let matches = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        
+        if (matches) {
+            matches = matches.map(m => {
+                // Hapus tanda kutip pembungkus dan unescape double quotes
+                if (m.startsWith('"') && m.endsWith('"')) {
+                    return m.slice(1, -1).replace(/""/g, '"');
+                }
+                return m;
+            });
+
+            headers.forEach((h, index) => {
+                let val = matches[index];
+                if(val === 'null' || val === undefined) val = null;
+                obj[h] = val;
+            });
+            result.push(obj);
+        }
+      }
+      return result;
+    }
+  </script>
+
+</body>
+</html>

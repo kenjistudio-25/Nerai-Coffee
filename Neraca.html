@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neraca Keuangan - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #91a9a1;
+      color: #ecf0f1;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(12, 6, 4, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #3a2a1f;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #dfaa72;
+    }
+
+    /* ================== CONTENT ================== */
+    .container {
+      padding: 100px 2rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #052153;
+      margin-bottom: 2rem;
+      font-size: 2.2rem;
+    }
+
+    /* Input Modal Awal */
+    .input-section {
+      background: #34495e;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .input-section label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #bdc3c7;
+    }
+
+    .input-section input {
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #7f8c8d;
+      background: #2c3e50;
+      color: #fff;
+      font-size: 1.1rem;
+      width: 250px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .card {
+      background: #030303;
+      border-radius: 16px;
+      padding: 1.5rem;
+      color: #2c3e50;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+      border-left: 6px solid #34495e;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #7f8c8d;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+
+    .card.income { border-left-color: #27ae60; }
+    .card.income .card-value { color: #27ae60; }
+
+    .card.expense { border-left-color: #c0392b; }
+    .card.expense .card-value { color: #c0392b; }
+
+    .card.profit { border-left-color: #f1c40f; }
+    .card.profit .card-value { color: #f39c12; }
+
+    /* Recap Table */
+    .recap-container {
+      background: #000000;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      margin-bottom: 2rem;
+    }
+
+    .recap-title {
+      font-size: 1.4rem;
+      margin-bottom: 1.5rem;
+      color: #ecf0f1;
+      border-bottom: 1px solid #7f8c8d;
+      padding-bottom: 0.5rem;
+    }
+
+    .recap-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 1rem 0;
+      border-bottom: 1px solid #465c71;
+      font-size: 1.1rem;
+    }
+
+    .recap-row:last-child {
+      border-bottom: none;
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: #f1c40f;
+      margin-top: 1rem;
+      border-top: 2px solid #f1c40f;
+      padding-top: 1.5rem;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, opacity 0.2s;
+      font-family: inherit;
+      width: 100%;
+      text-align: center;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+      background: #057514;
+      color: #eee456;
+    }
+    
+    .btn-refresh { background: #eff1f3; color: rgb(0, 0, 0); }
+    .btn-export { background: #edf0f1; color: rgb(0, 0, 0); }
+    .btn-back { background: #e5e8eb; color: rgb(0, 0, 0); }
+
+    /* Chart */
+    .chart-wrapper {
+      background: #ecf0f1;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      height: 350px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Neraca Keuangan</h1>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="card income">
+        <div class="card-title"><i class="fas fa-arrow-up"></i> Total Pemasukan</div>
+        <div class="card-value" id="totalIncome">Rp 0</div>
+      </div>
+      <div class="card expense">
+        <div class="card-title"><i class="fas fa-arrow-down"></i> Total Pengeluaran</div>
+        <div class="card-value" id="totalExpense">Rp 0</div>
+      </div>
+      <div class="card profit">
+        <div class="card-title"><i class="fas fa-coins"></i> Profit Bersih</div>
+        <div class="card-value" id="totalProfit">Rp 0</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-wrapper">
+      <canvas id="neracaChart"></canvas>
+    </div>
+
+    <!-- Rekap Neraca -->
+    <div class="recap-container">
+      <div class="recap-title">Rekapitulasi Neraca</div>
+      <div class="recap-row">
+        <span>(-) Modal Awal</span>
+        <span id="recapModal" style="color: #e74c3c;">Rp 0</span>
+      </div>
+      <div class="recap-row">
+        <span>(-) Total Pengeluaran</span>
+        <span id="recapExpense" style="color: #e74c3c;">Rp 0</span>
+      </div>
+      <div class="recap-row">
+        <span>(+) Total Pemasukan</span>
+        <span id="recapIncome" style="color: #2ecc71;">Rp 0</span>
+      </div>
+      <div class="recap-row">
+        <span>Balance</span>
+        <span id="recapFinal">Rp 0</span>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button id="btnRefresh" class="btn btn-refresh"><i class="fas fa-sync-alt" style="margin-right: 8px;"></i> Refresh</button>
+      <button id="btnExport" class="btn btn-export"><i class="fas fa-file-pdf" style="margin-right: 8px;"></i> Export</button>
+      <a href="dashboard.html" class="btn btn-back"><i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Kembali Ke Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Elements
+      const elIncome = document.getElementById('totalIncome');
+      const elExpense = document.getElementById('totalExpense');
+      const elProfit = document.getElementById('totalProfit');
+      
+      const elRecapModal = document.getElementById('recapModal');
+      const elRecapIncome = document.getElementById('recapIncome');
+      const elRecapExpense = document.getElementById('recapExpense');
+      const elRecapFinal = document.getElementById('recapFinal');
+
+      let currentModalAwal = 0;
+
+      // Load Info Usaha & Modal Awal
+      try {
+        const { data } = await supabase.from('tabelprofil').select('nama_usaha, logo, modal_awal').limit(1).single();
+        if (data) {
+          if (data.nama_usaha) document.getElementById('navbarBusinessName').textContent = data.nama_usaha.toUpperCase();
+          if (data.logo) {
+            const { data: publicData } = supabase.storage.from('aset').getPublicUrl(data.logo);
+            document.getElementById('navbarLogo').src = publicData.publicUrl;
+          }
+          // Set Modal Awal dari Database
+          if (data.modal_awal !== null && data.modal_awal !== undefined) {
+            currentModalAwal = Number(data.modal_awal);
+            updateUI();
+          }
+        }
+      } catch (err) { console.error('Error loading info:', err); }
+
+      // Helper Format Rupiah
+      const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+      let incomeTotal = 0;
+      let expenseTotal = 0;
+
+      async function calculateNeraca() {
+        try {
+          // 1. Fetch Pemasukan (Total Belanja)
+          const { data: incomeData, error: incomeError } = await supabase
+            .from('pemasukan')
+            .select('total_belanja');
+          
+          if (incomeError) throw incomeError;
+
+          incomeTotal = (incomeData || []).reduce((sum, item) => sum + (Number(item.total_belanja) || 0), 0);
+
+          // 2. Fetch Pengeluaran (Total Belanja)
+          const { data: expenseData, error: expenseError } = await supabase
+            .from('pengeluaran')
+            .select('total_belanja');
+
+          if (expenseError) throw expenseError;
+
+          expenseTotal = (expenseData || []).reduce((sum, item) => sum + (Number(item.total_belanja) || 0), 0);
+
+          updateUI();
+          renderChart();
+
+        } catch (err) {
+          console.error('Gagal menghitung neraca:', err);
+        }
+      }
+
+      function updateUI() {
+        const modalAwal = currentModalAwal;
+        const profit = incomeTotal - expenseTotal;
+        const modalAkhir = incomeTotal - (modalAwal + expenseTotal);
+
+        // Update Cards
+        elIncome.textContent = formatRupiah(incomeTotal);
+        elExpense.textContent = formatRupiah(expenseTotal);
+        elProfit.textContent = formatRupiah(profit);
+        
+        // Color Profit
+        elProfit.style.color = profit >= 0 ? '#27ae60' : '#c0392b';
+
+        // Update Recap Table
+        elRecapModal.textContent = formatRupiah(modalAwal);
+        elRecapIncome.textContent = formatRupiah(incomeTotal);
+        elRecapExpense.textContent = formatRupiah(expenseTotal);
+        elRecapFinal.textContent = formatRupiah(modalAkhir);
+
+        // Color Balance
+        elRecapFinal.style.color = modalAkhir >= 0 ? '#2ecc71' : '#e74c3c';
+      }
+
+      // === Logic Refresh ===
+      document.getElementById('btnRefresh').addEventListener('click', function() {
+        const originalText = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading...';
+        this.disabled = true;
+        
+        calculateNeraca().then(() => {
+          this.innerHTML = originalText;
+          this.disabled = false;
+        });
+      });
+
+      // === Logic Export PDF ===
+      document.getElementById('btnExport').addEventListener('click', function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.text('Laporan Neraca Keuangan - Nerai Coffee', 14, 22);
+        
+        doc.setFontSize(10);
+        const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        doc.text(`Dicetak pada: ${dateStr}`, 14, 28);
+
+        // Data Rekapitulasi
+        const modalVal = elRecapModal.textContent;
+        const expenseVal = elRecapExpense.textContent;
+        const incomeVal = elRecapIncome.textContent;
+        const finalVal = elRecapFinal.textContent;
+
+        const tableData = [
+          ['Keterangan', 'Nominal'],
+          ['(-) Modal Awal', modalVal],
+          ['(-) Total Pengeluaran', expenseVal],
+          ['(+) Total Pemasukan', incomeVal],
+          ['Balance', finalVal]
+        ];
+
+        doc.autoTable({
+          startY: 35,
+          head: [tableData[0]],
+          body: tableData.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [52, 73, 94] }, // Warna header tabel (#34495e)
+          columnStyles: {
+            0: { fontStyle: 'bold' },
+            1: { halign: 'right' }
+          },
+          didParseCell: function (data) {
+            // Highlight baris Balance
+            if (data.row.index === 3 && data.section === 'body') {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [241, 196, 15]; // Kuning
+              data.cell.styles.textColor = [44, 62, 80];
+            }
+          }
+        });
+
+        // Tambahkan Chart jika ada
+        const canvas = document.getElementById('neracaChart');
+        if (canvas) {
+          const chartImg = canvas.toDataURL('image/png', 1.0);
+          const finalY = doc.lastAutoTable.finalY + 15;
+          
+          doc.text('Grafik Neraca', 14, finalY);
+          doc.addImage(chartImg, 'PNG', 14, finalY + 5, 180, 90);
+        }
+
+        doc.save('Laporan_Neraca_Nerai.pdf');
+      });
+
+      // Chart
+      function renderChart() {
+        const ctx = document.getElementById('neracaChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Pemasukan', 'Pengeluaran', 'Profit'],
+            datasets: [{
+              label: 'Nominal (Rp)',
+              data: [incomeTotal, expenseTotal, incomeTotal - expenseTotal],
+              backgroundColor: [
+                'rgba(39, 174, 96, 0.7)',
+                'rgba(192, 57, 43, 0.7)',
+                'rgba(241, 196, 15, 0.7)'
+              ],
+              borderColor: [
+                '#27ae60',
+                '#c0392b',
+                '#f39c12'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return formatRupiah(context.raw);
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return 'Rp ' + (value/1000).toLocaleString('id-ID') + 'k';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // Init
+      calculateNeraca();
+    });
+  </script>
+
+</body>
+</html>
