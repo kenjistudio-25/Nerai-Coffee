@@ -263,11 +263,116 @@
       color: #60ecb8;
     }
 
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header-date {
+      text-align: right;
+    }
+
     @media (max-width: 992px) {
       .dashboard.shifted {
         margin-left: 0;
       }
     }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .dashboard {
+        padding: 100px 1rem 2rem;
+      }
+      .section-container {
+        padding: 1rem;
+      }
+      .card {
+        padding: 1.2rem;
+      }
+      .card-value {
+        font-size: 1.6rem;
+      }
+      .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .dashboard-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .header-date {
+        text-align: center;
+      }
+    }
+
+    /* Carousel Styles */
+    .carousel-container {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      aspect-ratio: 16/9;
+      max-height: 450px;
+      background: #000;
+    }
+
+    .carousel-track {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+      height: 100%;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      position: relative;
+      height: 100%;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.8;
+    }
+
+    .carousel-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      color: #e6b989;
+      border: none;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      z-index: 10;
+      transition: background 0.3s;
+    }
+    .carousel-btn:hover { background: rgba(193, 124, 74, 0.8); color: #fff; }
+    .carousel-btn.prev { left: 1rem; }
+    .carousel-btn.next { right: 1rem; }
   </style>
 </head>
 <body>
@@ -288,7 +393,16 @@
     <ul class="sidebar-menu">
       <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
       <li><a href="profil.html"><i class="fas fa-user"></i> Profil</a></li>
-      <li><a href="menu.html"><i class="fas fa-coffee"></i> Menu & Harga</a></li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle">
+          <div style="display:flex; align-items:center;"><i class="fas fa-coffee"></i> Kelola Menu</div>
+          <i class="fas fa-chevron-down" style="margin-right: 0; font-size: 0.8rem;"></i>
+        </a>
+        <ul class="dropdown-menu">
+          <li><a href="menu.html" style="padding-left: 3rem;"><i class="fas fa-list"></i> Menu & Harga</a></li>
+          <li><a href="menufavorit.html" style="padding-left: 3rem;"><i class="fas fa-star"></i> Menu Favorit</a></li>
+        </ul>
+      </li>
       
       <!-- Kelola Jadwal sekarang menu biasa, langsung ke jadwaljam.html -->
       <li><a href="jadwaljam.html"><i class="fas fa-calendar-day"></i> Kelola Jadwal</a></li>
@@ -326,9 +440,9 @@
   <!-- Main Content -->
   <div class="dashboard" id="dashboardContent">
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div class="dashboard-header">
       <h1 style="margin-bottom: 0;">Dashboard Overview</h1>
-      <div style="text-align: right;">
+      <div class="header-date">
         <div id="dashboardDate" style="color: #fbfbfb; font-size: 1.1rem; font-weight: 600;"></div>
         <div id="dashboardClock" style="color: #fefdfd; font-size: 1rem;"></div>
       </div>
@@ -399,69 +513,14 @@
 
     <!-- 5 Menu Terlaris -->
     <div class="top-menu-section">
-      <h2 style="color:#333; margin-bottom:1.2rem">5 Menu Terlaris (Bulan Ini)</h2>
-
-      <div style="overflow-x:auto;">
-        <table style="width:100%; border-collapse:collapse; background:#eea107; border-radius:12px; overflow:hidden; border:1px solid #e0e0e0;">
-          <thead>
-            <tr style="background:#02284f;">
-              <th style="padding:1rem; text-align:center; color:#fbfbfb; font-weight:600; width:120px;">Gambar</th>
-              <th style="padding:1rem; text-align:left; color:#fffcfc; font-weight:600;">Nama Menu</th>
-              <th style="padding:1rem; text-align:center; color:#ffffff; font-weight:600; width:150px;">Jumlah Transaksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom:1px solid #eee;">
-              <td style="padding:1rem; text-align:center;">
-                <img src="https://perfectdailygrind.com/wp-content/uploads/2024/09/Pouring-espresso-in-drink.jpg" 
-                     alt="Nerai Signature" 
-                     style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid #c17c4a;">
-              </td>
-              <td style="padding:1rem; font-weight:600; color:#0a0a0a;">Nerai Signature</td>
-              <td style="padding:1rem; text-align:center; color:#fffffe; font-size:1.3rem; font-weight:700;">342×</td>
-            </tr>
-
-            <tr style="border-bottom:1px solid #eee;">
-              <td style="padding:1rem; text-align:center;">
-                <img src="https://images.unsplash.com/photo-1572449043410-2c84a0c2e3e5?auto=format&fit=crop&q=80&w=800" 
-                     alt="Black Forest Latte" 
-                     style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid #c17c4a;">
-              </td>
-              <td style="padding:1rem; font-weight:600; color:#000000;">Black Forest Latte</td>
-              <td style="padding:1rem; text-align:center; color:#ffffff; font-size:1.3rem; font-weight:700;">289×</td>
-            </tr>
-
-            <tr style="border-bottom:1px solid #eee;">
-              <td style="padding:1rem; text-align:center;">
-                <img src="https://images.unsplash.com/photo-1494314671902-399b18174975?auto=format&fit=crop&q=80&w=800" 
-                     alt="Iced Americano" 
-                     style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid #c17c4a;">
-              </td>
-              <td style="padding:1rem; font-weight:600; color:#000000;">Iced Americano</td>
-              <td style="padding:1rem; text-align:center; color:#ffffff; font-size:1.3rem; font-weight:700;">215×</td>
-            </tr>
-
-            <tr style="border-bottom:1px solid #eee;">
-              <td style="padding:1rem; text-align:center;">
-                <img src="https://images.unsplash.com/photo-1517959105821-eaf2591984a5?auto=format&fit=crop&q=80&w=800" 
-                     alt="Latte Art" 
-                     style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid #c17c4a;">
-              </td>
-              <td style="padding:1rem; font-weight:600; color:#000000;">Latte Art</td>
-              <td style="padding:1rem; text-align:center; color:#ffffff; font-size:1.3rem; font-weight:700;">178×</td>
-            </tr>
-
-            <tr>
-              <td style="padding:1rem; text-align:center;">
-                <img src="https://images.unsplash.com/photo-1512568400610-62da28bc8a13?auto=format&fit=crop&q=80&w=800" 
-                     alt="Cold Brew" 
-                     style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid #c17c4a;">
-              </td>
-              <td style="padding:1rem; font-weight:600; color:#000000;">Cold Brew</td>
-              <td style="padding:1rem; text-align:center; color:#fefefe; font-size:1.3rem; font-weight:700;">142×</td>
-            </tr>
-          </tbody>
-        </table>
+      <h2 style="color:#333; margin-bottom:1.2rem">Menu Populer (Carousel)</h2>
+      <div class="carousel-container">
+        <div class="carousel-track" id="menuCarouselTrack">
+          <!-- Slides will be loaded here -->
+          <div style="display:flex; align-items:center; justify-content:center; height:100%; width:100%; color:#fff;">Memuat...</div>
+        </div>
+        <button class="carousel-btn prev" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+        <button class="carousel-btn next" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
       </div>
     </div>
 
@@ -865,6 +924,77 @@
         updateChartData(yearFilter.value);
         if (chartTitle) chartTitle.textContent = `Statistik Penjualan Bulanan ${yearFilter.value}`;
       }
+
+      // === CAROUSEL MENU POPULER ===
+      async function loadPopularMenuCarousel() {
+        const track = document.getElementById('menuCarouselTrack');
+        if (!track) return;
+
+        try {
+          const { data, error } = await supabase
+            .from('menupopuler')
+            .select('*')
+            .limit(5);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            track.innerHTML = '';
+            data.forEach(item => {
+              let imgUrl = 'https://via.placeholder.com/800x450?text=No+Image';
+              if (item.file_photo) {
+                 const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(item.file_photo);
+                 imgUrl = publicData.publicUrl;
+              }
+
+              const slide = document.createElement('div');
+              slide.className = 'carousel-slide';
+              slide.innerHTML = `
+                <img src="${imgUrl}" alt="${item.nama}">
+                <div class="carousel-caption">
+                  <h3 style="color:#e6b989; font-size:1.8rem; margin-bottom:0.5rem; text-shadow: 2px 2px 4px #000;">${item.nama}</h3>
+                  <p style="color:#fff; font-size:1.1rem; margin-bottom:0.5rem; text-shadow: 1px 1px 2px #000;">${item.deskripsi || ''}</p>
+                  <p style="color:#d6f510; font-weight:700; font-size:1.4rem; text-shadow: 1px 1px 2px #000;">Rp ${Number(item.harga).toLocaleString('id-ID')}</p>
+                </div>
+              `;
+              track.appendChild(slide);
+            });
+            initCarousel();
+          } else {
+            track.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; width:100%; color:#ccc;">Belum ada menu populer</div>';
+          }
+        } catch (err) {
+          console.error('Error loading carousel:', err);
+          track.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; width:100%; color:#ff6b6b;">Gagal memuat data</div>';
+        }
+      }
+
+      function initCarousel() {
+        const track = document.getElementById('menuCarouselTrack');
+        const slides = track.children;
+        if(slides.length === 0) return;
+        
+        let currentIndex = 0;
+        const totalSlides = slides.length;
+
+        function updateSlide() {
+          track.style.transform = `translateX(-${currentIndex * 100}%)`;
+        }
+
+        document.getElementById('nextBtn').onclick = () => {
+          currentIndex = (currentIndex + 1) % totalSlides;
+          updateSlide();
+        };
+
+        document.getElementById('prevBtn').onclick = () => {
+          currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+          updateSlide();
+        };
+
+        setInterval(() => { currentIndex = (currentIndex + 1) % totalSlides; updateSlide(); }, 5000);
+      }
+
+      loadPopularMenuCarousel();
     });
   </script>
 
