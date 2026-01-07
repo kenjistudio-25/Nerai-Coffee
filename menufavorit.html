@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Menu Favorit - Nerai Coffee</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #91a9a1; /* Warna background sama dengan Dashboard */
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* ================== NAVBAR ================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,5,3,0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid #251a12;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 2px solid #c17c4a;
+    }
+
+    .business-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #e6b989;
+    }
+
+    /* ================== CONTENT ================== */
+    .container {
+      padding: 100px 2rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #000000;
+      margin-bottom: 2.5rem;
+      font-size: 2.2rem;
+      text-align: center;
+    }
+
+    .fav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+
+    .fav-card {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+      border: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fav-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    }
+
+    .fav-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-bottom: 1px solid #eee;
+    }
+
+    .fav-content {
+      padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fav-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .fav-desc {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 1rem;
+      flex: 1; /* Mendorong harga ke bawah */
+      line-height: 1.5;
+    }
+
+    .fav-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #c17c4a;
+      margin-bottom: 1.2rem;
+    }
+
+    .fav-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #f39c12;
+      color: #1a120c;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .fav-badge:hover { background: #d68910; }
+    
+    .btn-delete-fav {
+      margin-top: 0.5rem;
+      background: #3a2a1f;
+      color: #ff6b6b;
+      border: 1px solid #ff6b6b;
+      cursor: pointer;
+    }
+    .btn-delete-fav:hover { background: #ff6b6b; color: white; }
+
+    /* Tombol Kembali */
+    .btn-back {
+      display: inline-block;
+      margin-top: 3rem;
+      padding: 0.8rem 1.5rem;
+      background: #333;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-back:hover {
+      background: #000;
+    }
+
+    /* ================== MODAL STYLES ================== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: #1a120c;
+      padding: 2rem;
+      border: 1px solid #3a2a1f;
+      width: 90%;
+      max-width: 800px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .close {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      color: #c9b29a;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .menu-selection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+
+    .mini-card {
+      background: #251a12;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+      border: 1px solid #3a2a1f;
+      position: relative;
+    }
+    .mini-card:hover { transform: scale(1.05); border-color: #c17c4a; }
+    .mini-card img { width: 100%; height: 100px; object-fit: cover; }
+    .mini-card-info { padding: 0.5rem; text-align: center; }
+    .mini-card-name { font-size: 0.8rem; color: #f8f1e9; font-weight: 600; margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-card-price { font-size: 0.75rem; color: #e6b989; }
+
+    /* Overlay Button Styles */
+    .fav-overlay-btn {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .mini-card:hover .fav-overlay-btn {
+      opacity: 1;
+    }
+    .btn-make-fav {
+      background: #c17c4a;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+    }
+    .mini-card:hover .btn-make-fav {
+      transform: translateY(0);
+    }
+    .btn-make-fav:hover {
+      background: #d68910;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar (Tanpa Hamburger) -->
+  <nav class="navbar">
+    <div class="logo-container">
+      <img src="https://images.unsplash.com/photo-1612810806545-6e4c4e0c0c0c?auto=format&fit=crop&q=80&w=100" 
+           alt="Logo Usaha" class="logo-img" id="navbarLogo">
+      <span class="business-name" id="navbarBusinessName">NERAI COFFEE</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Daftar menu favorit</h1>
+
+    <div class="fav-grid" id="favGrid">
+      <!-- Data akan dimuat dari Supabase -->
+      <p style="grid-column: 1/-1; text-align: center; color: #333;">Memuat menu favorit...</p>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="dashboard.html" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Modal Daftar Menu -->
+  <div id="allMenuModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 style="text-align: center; margin-bottom: 1.5rem; color: #e6b989;">Pilih Menu</h2>
+      <div class="menu-selection-grid" id="menuSelectionGrid">
+        <!-- Data Menu dari Supabase akan muncul di sini -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Script untuk memuat Logo & Nama Usaha dari Supabase agar konsisten
+    document.addEventListener('DOMContentLoaded', async function() {
+      const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
+      
+      if (window.supabase) {
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const TABLE_NAME = 'tabelprofil';
+        const BUCKET_NAME = 'aset';
+
+        try {
+          const { data, error } = await supabase
+            .from(TABLE_NAME)
+            .select('nama_usaha, logo')
+            .limit(1)
+            .single();
+
+          if (data) {
+            if (data.nama_usaha) {
+              document.getElementById('navbarBusinessName').textContent = data.nama_usaha.toUpperCase();
+            }
+            if (data.logo) {
+              const { data: publicData } = supabase.storage
+                .from(BUCKET_NAME)
+                .getPublicUrl(data.logo);
+              document.getElementById('navbarLogo').src = publicData.publicUrl;
+            }
+          }
+        } catch (err) {
+          console.error('Gagal memuat info usaha:', err);
+        }
+
+        // === LOGIKA MODAL MENU FAVORIT ===
+        const modal = document.getElementById("allMenuModal");
+        const spanClose = document.getElementsByClassName("close")[0];
+        const menuGridContainer = document.getElementById("menuSelectionGrid");
+        let loadedMenus = [];
+        const favGrid = document.getElementById('favGrid');
+
+        // Event listener untuk tombol buka modal dipindahkan ke fungsi renderFavorites
+        
+        // Tutup Modal
+        spanClose.onclick = function() { modal.style.display = "none"; }
+        window.onclick = function(event) { if (event.target == modal) modal.style.display = "none"; }
+
+        // Fungsi Fetch Data Menu
+        async function fetchAllMenus() {
+          menuGridContainer.innerHTML = '<p style="color:#c9b29a; text-align:center; grid-column:1/-1;">Memuat menu...</p>';
+          
+          try {
+            const { data, error } = await supabase
+              .from('tabelmenu')
+              .select('*')
+              .order('nama_menu', { ascending: true });
+              
+            if (error) throw error;
+            
+            menuGridContainer.innerHTML = '';
+            loadedMenus = data || [];
+            
+            if (data && data.length > 0) {
+              data.forEach(item => {
+                let imgUrl = 'https://via.placeholder.com/150?text=No+Image';
+                if (item.photo) {
+                  const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(item.photo);
+                  imgUrl = publicData.publicUrl;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'mini-card';
+                card.innerHTML = `
+                  <img src="${imgUrl}" alt="${item.nama_menu}">
+                  <div class="mini-card-info">
+                    <div class="mini-card-name">${item.nama_menu}</div>
+                    <div class="mini-card-price">Rp ${Number(item.harga).toLocaleString('id-ID')}</div>
+                  </div>
+                  <div class="fav-overlay-btn">
+                    <button class="btn-make-fav" onclick="saveToMenuPopuler('${item.id}')">Jadikan Menu Favorit</button>
+                  </div>
+                `;
+                menuGridContainer.appendChild(card);
+              });
+            } else {
+               menuGridContainer.innerHTML = '<p style="color:#c9b29a; text-align:center; grid-column:1/-1;">Tidak ada menu ditemukan.</p>';
+            }
+          } catch (err) {
+            console.error('Error fetching menus:', err);
+            menuGridContainer.innerHTML = '<p style="color:#ff6b6b; text-align:center; grid-column:1/-1;">Gagal memuat menu.</p>';
+          }
+        }
+
+        // Fungsi Fetch & Render Menu Favorit (Tabel menupopuler)
+        async function fetchFavorites() {
+          favGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #333;">Memuat menu favorit...</p>';
+          
+          try {
+            const { data, error } = await supabase
+              .from('menupopuler')
+              .select('*')
+              .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            favGrid.innerHTML = '';
+
+            if (data && data.length > 0) {
+              data.forEach(item => {
+                let imgUrl = 'https://via.placeholder.com/400x300?text=No+Image';
+                if (item.file_photo) {
+                   const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(item.file_photo);
+                   imgUrl = publicData.publicUrl;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'fav-card';
+                card.innerHTML = `
+                  <img src="${imgUrl}" alt="${item.nama}" class="fav-img">
+                  <div class="fav-content">
+                    <div class="fav-name">${item.nama}</div>
+                    <div class="fav-desc">${item.deskripsi || '-'}</div>
+                    <div class="fav-price">Rp ${Number(item.harga).toLocaleString('id-ID')}</div>
+                    <div class="fav-badge" onclick="openMenuModal()"><i class="fas fa-plus"></i> Tambah Favorit Lain</div>
+                    <div class="fav-badge btn-delete-fav" onclick="deleteFavorite('${item.id}')"><i class="fas fa-trash"></i> Hapus</div>
+                  </div>
+                `;
+                favGrid.appendChild(card);
+              });
+            } else {
+              // Jika kosong, tampilkan tombol tambah
+              favGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                  <p style="color: #333; margin-bottom: 1rem;">Belum ada menu favorit.</p>
+                  <button class="fav-badge" style="border:none; margin: 0 auto; display:inline-flex;" onclick="openMenuModal()">
+                    <i class="fas fa-plus" style="margin-right:5px;"></i> Tambah Menu Favorit
+                  </button>
+                </div>
+              `;
+            }
+          } catch (err) {
+            console.error('Error fetching favorites:', err);
+            favGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ff6b6b;">Gagal memuat data.</p>';
+          }
+        }
+
+        // Fungsi Simpan ke Tabel menupopuler
+        window.saveToMenuPopuler = async function(id) {
+          const item = loadedMenus.find(m => m.id == id);
+          if (!item) return;
+
+          try {
+            const payload = {
+              nama: item.nama_menu,
+              deskripsi: item.deskripsi,
+              harga: item.harga,
+              file_photo: item.photo
+            };
+
+            const { error } = await supabase.from('menupopuler').insert([payload]);
+            if (error) throw error;
+
+            alert(`Menu "${item.nama_menu}" berhasil disimpan ke Menu Favorit!`);
+            modal.style.display = "none";
+            fetchFavorites(); // Refresh halaman
+          } catch (err) {
+            console.error('Error saving favorite:', err);
+            alert('Gagal menyimpan: ' + err.message);
+          }
+        };
+
+        // Fungsi Hapus Favorit
+        window.deleteFavorite = async function(id) {
+          if (!confirm('Hapus menu ini dari daftar favorit?')) return;
+          try {
+            const { error } = await supabase.from('menupopuler').delete().eq('id', id);
+            if (error) throw error;
+            fetchFavorites();
+          } catch (err) {
+            alert('Gagal menghapus: ' + err.message);
+          }
+        };
+
+        // Helper Buka Modal (Global)
+        window.openMenuModal = function() {
+          modal.style.display = "flex";
+          fetchAllMenus();
+        };
+
+        // Load awal
+        fetchFavorites();
+      }
+    });
+  </script>
+</body>
+</html>
