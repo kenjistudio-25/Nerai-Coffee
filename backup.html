@@ -504,6 +504,7 @@
         await supabaseClient.from('tabelmenu').delete().gt('id', 0);
         await supabaseClient.from('tabelorder').delete().neq('id_item', '0');
         await supabaseClient.from('tabelrekening').delete().gt('id', 0);
+        await supabaseClient.from('menupopuler').delete().gt('id', 0);
         
         // 3. Reset Tabel Profil (Hapus Semua Data)
         const { error: deleteProfileError } = await supabaseClient
