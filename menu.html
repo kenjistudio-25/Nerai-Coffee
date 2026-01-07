@@ -374,7 +374,7 @@
         
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="btnSave" style="flex: 1; justify-content: center;">Tambah Menu</button>
-          <button type="button" class="btn" id="btnUpdate" style="background: #c17c4a; color: white; border:none; flex: 1; justify-content: center;">Update</button>
+          <button type="button" class="btn" id="btnUpdate" style="display:none; background: #c17c4a; color: white; border:none; flex: 1; justify-content: center;">Update</button>
           <button type="button" class="btn btn-secondary" id="btnCancel" style="flex: 1; justify-content: center;">Cancel</button>
         </div>
       </form>
@@ -488,8 +488,11 @@
       const btn = document.getElementById("addMenuBtn");
       const span = document.getElementsByClassName("close")[0];
       const btnCancel = document.getElementById("btnCancel");
+      const btnSave = document.getElementById('btnSave');
+      const btnUpdate = document.getElementById('btnUpdate');
+      const menuForm = document.getElementById('menuForm');
 
-      if (btn) btn.onclick = () => modal.style.display = "flex";
+      // Logic buka modal tambah ada di bawah (dimodifikasi agar reset form)
       if (span) span.onclick = () => modal.style.display = "none";
       if (btnCancel) btnCancel.onclick = () => modal.style.display = "none";
 
@@ -651,6 +654,9 @@
 
       // === LOGIKA CRUD MENU (SUPABASE) ===
       
+      let allMenuItems = [];
+      let currentEditId = null;
+
       // 1. Fetch & Render Menu
       async function fetchMenu() {
         const tbody = document.querySelector('table tbody');
@@ -664,6 +670,7 @@
           if (error) throw error;
 
           tbody.innerHTML = '';
+          allMenuItems = data || [];
           
           if (data && data.length > 0) {
             data.forEach((item, index) => {
@@ -684,8 +691,8 @@
                 </td>
                 <td>
                   <div class="action-icons">
-                    <button class="icon-btn edit" title="Edit"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="icon-btn delete" title="Hapus"><i class="fas fa-trash"></i></button>
+                    <button class="icon-btn edit" title="Edit" onclick="openEditModal('${item.id}')"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="icon-btn delete" title="Hapus" onclick="deleteMenu('${item.id}')"><i class="fas fa-trash"></i></button>
                   </div>
                 </td>
               `;
@@ -702,10 +709,80 @@
       // Load menu saat awal
       fetchMenu();
 
+      // Fungsi Buka Modal Edit
+      window.openEditModal = function(id) {
+        const item = allMenuItems.find(i => i.id == id);
+        if (!item) return;
+
+        currentEditId = id;
+        document.getElementById('menuName').value = item.nama_menu;
+        document.getElementById('menuDesc').value = item.deskripsi || '';
+        document.getElementById('menuPrice').value = item.harga;
+        
+        // Preview Foto Lama
+        if (item.photo) {
+           const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(item.photo);
+           imagePreview.src = publicData.publicUrl;
+           imagePreview.style.display = 'block';
+        } else {
+           imagePreview.src = '';
+           imagePreview.style.display = 'none';
+        }
+
+        // Atur Tombol
+        btnSave.style.display = 'none';
+        btnUpdate.style.display = 'flex';
+        modal.style.display = 'flex';
+      };
+
+      // Fungsi Hapus Menu
+      window.deleteMenu = async function(id) {
+        if (!confirm('Apakah Anda yakin ingin menghapus menu ini?')) return;
+        
+        try {
+           // Opsional: Hapus gambar dari storage jika perlu, tapi disini kita hapus record saja
+           const { error } = await supabase.from(TABLE_MENU).delete().eq('id', id);
+           if (error) throw error;
+           
+           alert('Menu berhasil dihapus');
+           fetchMenu();
+        } catch(err) {
+           console.error(err);
+           alert('Gagal menghapus: ' + err.message);
+        }
+      };
+
+      // Logic Tombol Tambah (Reset Form)
+      if (btn) {
+        btn.onclick = () => {
+           currentEditId = null;
+           menuForm.reset();
+           imagePreview.style.display = 'none';
+           imagePreview.src = '';
+           
+           btnSave.style.display = 'flex';
+           btnUpdate.style.display = 'none';
+           modal.style.display = 'flex';
+        };
+      }
+
+      // Logic Tombol Update
+      if (btnUpdate) {
+        btnUpdate.addEventListener('click', async () => {
+           if (!currentEditId) return;
+           saveMenuData(true); // true = mode update
+        });
+      }
+
       // 2. Tambah Menu (Insert)
-      const btnSave = document.getElementById('btnSave');
       if (btnSave) {
         btnSave.addEventListener('click', async () => {
+          saveMenuData(false); // false = mode insert
+        });
+      }
+
+      // Fungsi Shared untuk Simpan/Update
+      async function saveMenuData(isUpdate) {
           const name = document.getElementById('menuName').value.trim();
           const desc = document.getElementById('menuDesc').value.trim();
           const price = document.getElementById('menuPrice').value;
@@ -717,8 +794,10 @@
             return;
           }
 
-          btnSave.textContent = 'Menyimpan...';
-          btnSave.disabled = true;
+          const activeBtn = isUpdate ? btnUpdate : btnSave;
+          const originalText = activeBtn.textContent;
+          activeBtn.textContent = 'Menyimpan...';
+          activeBtn.disabled = true;
 
           try {
             let photoPath = null;
@@ -736,25 +815,34 @@
               photoPath = fileName;
             }
 
-            // Insert ke database
-            const { error: insertError } = await supabase
-              .from(TABLE_MENU)
-              .insert([{
-                nama_menu: name,
-                deskripsi: desc,
-                harga: price,
-                photo: photoPath
-              }]);
+            const payload = {
+              nama_menu: name,
+              deskripsi: desc,
+              harga: price
+            };
+            
+            // Hanya update foto jika ada upload baru
+            if (photoPath) {
+              payload.photo = photoPath;
+            } else if (!isUpdate && !photoPath) {
+              // Jika insert baru dan tidak ada foto, biarkan null
+              payload.photo = null; 
+            }
 
-            if (insertError) throw insertError;
+            let error;
+            if (isUpdate) {
+               ({ error } = await supabase.from(TABLE_MENU).update(payload).eq('id', currentEditId));
+            } else {
+               ({ error } = await supabase.from(TABLE_MENU).insert([payload]));
+            }
 
-            alert('Menu berhasil ditambahkan!');
+            if (error) throw error;
+
+            alert(isUpdate ? 'Menu berhasil diupdate!' : 'Menu berhasil ditambahkan!');
             
             // Reset form & tutup modal
-            document.getElementById('menuForm').reset();
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('imagePreview').src = '';
-            document.getElementById('menuModal').style.display = 'none';
+            menuForm.reset();
+            modal.style.display = 'none';
             
             // Refresh tabel
             fetchMenu();
@@ -763,10 +851,9 @@
             console.error('Error saving menu:', err);
             alert('Gagal menyimpan menu: ' + (err.message || 'Terjadi kesalahan'));
           } finally {
-            btnSave.textContent = 'Tambah Menu';
-            btnSave.disabled = false;
+            activeBtn.textContent = originalText;
+            activeBtn.disabled = false;
           }
-        });
       }
     });
   </script>
