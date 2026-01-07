@@ -418,6 +418,9 @@
     .carousel-btn.next { right: 1rem; }
 
     @media (max-width: 768px) {
+      .carousel-container {
+        aspect-ratio: 1/1; /* Membuat carousel lebih tinggi di mode mobile */
+      }
       .carousel-caption, .carousel-btn {
         opacity: 0;
         transition: opacity 0.3s ease;
