@@ -90,6 +90,25 @@
       transform: scale(1.15);
     }
 
+    .location-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+      color: #c9b29a;
+    }
+    .location-map-icon {
+      color: #e6b989;
+      font-size: 1.2rem;
+      transition: transform 0.2s;
+    }
+    .location-map-icon:hover {
+      transform: scale(1.2);
+      color: #d18f5e;
+    }
+
     /* === MODAL LOGIN === */
     .modal {
       display: none;
@@ -234,8 +253,8 @@
     }
 
     .accordion-content {
-      max-height: 50vh;
-      overflow-y: auto;
+      max-height: 0;
+      overflow: hidden;
       transition: max-height 0.5s ease;
       scrollbar-width: thin;
       scrollbar-color: #c17c4a #251a12;
@@ -243,6 +262,7 @@
 
     .accordion-content.active {
       max-height: 60vh;
+      overflow-y: auto;
     }
 
     .accordion-content::-webkit-scrollbar {
@@ -322,10 +342,79 @@
       display: block;
     }
 
+    .btn-order:hover {
+      background: #27ae60;
+      color: white;
+    }
+
     .btn-order:active {
       transform: translateY(3px);
       box-shadow: 0 5px 15px rgba(193,124,74,0.4);
     }
+
+    /* Carousel Styles */
+    .carousel-container {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      aspect-ratio: 16/9;
+      max-height: 450px;
+      background: #000;
+      margin-bottom: 2rem; /* Add some space below */
+    }
+
+    .carousel-track {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+      height: 100%;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      position: relative;
+      height: 100%;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.8;
+    }
+
+    .carousel-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      color: #e6b989;
+      border: none;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      z-index: 10;
+      transition: background 0.3s;
+    }
+    .carousel-btn:hover { background: rgba(193, 124, 74, 0.8); color: #fff; }
+    .carousel-btn.prev { left: 1rem; }
+    .carousel-btn.next { right: 1rem; }
   </style>
 </head>
 <body>
@@ -336,6 +425,12 @@
       <div class="logo" id="headerBusinessName">NERAI</div>
       <div class="tagline" id="dateTimeDisplay"></div>
       <div class="status-message" id="operationalStatus"></div>
+      <div class="location-info" id="locationContainer" style="display: none;">
+        <span id="locationText"></span>
+        <a id="locationMapLink" href="#" target="_blank" class="location-map-icon" title="Buka di Google Maps">
+          <i class="fas fa-map-marker-alt"></i>
+        </a>
+      </div>
     </div>
     <i class="fas fa-user-circle login-icon" id="loginBtn"></i>
   </header>
@@ -378,6 +473,17 @@
       </p>
       <button id="btnClosedOk" class="btn-login" style="margin-top: 0; background: #3a2a1f; border: 1px solid #5c4030;">KEMBALI</button>
     </div>
+  </div>
+
+  <!-- Carousel Menu Favorit -->
+  <h2 id="carouselTitle" style="font-size:1.4rem; color:#e6b989; margin:1.5rem 0 0.8rem; text-align:center;">Menu Favorit Customer</h2>
+  <div class="carousel-container" id="carouselContainer">
+    <div class="carousel-track" id="menuCarouselTrack">
+      <!-- Slides will be loaded here -->
+      <div style="display:flex; align-items:center; justify-content:center; height:100%; width:100%; color:#fff;">Memuat...</div>
+    </div>
+    <button class="carousel-btn prev" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+    <button class="carousel-btn next" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
   </div>
 
   <div class="accordion-container">
@@ -449,6 +555,7 @@
       const SUPABASE_URL = 'https://jmeoqpofvxthckjoauii.supabase.co';
       const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZW9xcG9mdnh0aGNram9hdWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMTA2ODAsImV4cCI6MjA4Mjg4NjY4MH0.lJuapw3qAgci4PrviwQr1HOB67z3uBmIevSHzaIrLEk';
       const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const BUCKET_NAME = 'aset';
 
       // === LOAD BUSINESS INFO (LOGO & NAMA) ===
       async function loadBusinessInfo() {
@@ -488,6 +595,9 @@
       // === CEK STATUS OPERASIONAL HARI INI ===
       async function checkOperationalStatus() {
         const statusDisplay = document.getElementById('operationalStatus');
+        const locationContainer = document.getElementById('locationContainer');
+        const locationText = document.getElementById('locationText');
+        const locationMapLink = document.getElementById('locationMapLink');
         if (!statusDisplay) return;
 
         const now = new Date();
@@ -499,7 +609,7 @@
         try {
           const { data, error } = await supabase
             .from('tabeljadwal')
-            .select('buka, tutup, status')
+            .select('buka, tutup, status, lokasi, titik_lokasi')
             .eq('tanggal', todayISO)
             .maybeSingle();
 
@@ -513,10 +623,29 @@
               statusDisplay.textContent = `We're Open today from ${openTime} until ${closeTime}`;
               statusDisplay.style.color = '#27ae60';
             }
+
+            // Tampilkan Lokasi & Map
+            if (data.lokasi) {
+              locationText.textContent = data.lokasi;
+              locationContainer.style.display = 'flex';
+              
+              if (data.titik_lokasi) {
+                // Ekstrak koordinat jika formatnya "Alamat (lat, lng)" atau langsung "lat, lng"
+                let coords = data.titik_lokasi;
+                const match = coords.match(/\(([^)]+)\)/);
+                if (match) coords = match[1];
+                
+                locationMapLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`;
+                locationMapLink.style.display = 'inline-block';
+              } else {
+                locationMapLink.style.display = 'none';
+              }
+            }
           } else {
             // Jika tidak ada data jadwal, default dianggap Buka (16:00 - 00:00)
             statusDisplay.textContent = "We're Open today from 16:00 until 00:00";
             statusDisplay.style.color = '#27ae60';
+            locationContainer.style.display = 'none';
           }
         } catch (err) {
           console.error('Error checking status:', err);
@@ -568,6 +697,74 @@
       }
 
       loadMenu();
+
+      // === CAROUSEL MENU POPULER ===
+      async function loadPopularMenuCarousel() {
+        const track = document.getElementById('menuCarouselTrack');
+        const carouselContainer = document.getElementById('carouselContainer');
+        const carouselTitle = document.getElementById('carouselTitle');
+
+        if (!track || !carouselContainer || !carouselTitle) return;
+
+        try {
+          const { data, error } = await supabase
+            .from('menupopuler')
+            .select('*')
+            .limit(5);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            track.innerHTML = '';
+            data.forEach(item => {
+              let imgUrl = 'https://via.placeholder.com/800x450?text=No+Image';
+              if (item.file_photo) {
+                 const { data: publicData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(item.file_photo);
+                 imgUrl = publicData.publicUrl;
+              }
+
+              const slide = document.createElement('div');
+              slide.className = 'carousel-slide';
+              slide.innerHTML = `
+                <img src="${imgUrl}" alt="${item.nama}">
+                <div class="carousel-caption">
+                  <h3 style="color:#e6b989; font-size:1.8rem; margin-bottom:0.5rem; text-shadow: 2px 2px 4px #000;">${item.nama}</h3>
+                  <p style="color:#fff; font-size:1.1rem; margin-bottom:0.5rem; text-shadow: 1px 1px 2px #000;">${item.deskripsi || ''}</p>
+                  <p style="color:#d6f510; font-weight:700; font-size:1.4rem; text-shadow: 1px 1px 2px #000;">Rp ${Number(item.harga).toLocaleString('id-ID')}</p>
+                </div>
+              `;
+              track.appendChild(slide);
+            });
+            initCarousel();
+          } else {
+            carouselContainer.style.display = 'none';
+            carouselTitle.style.display = 'none';
+          }
+        } catch (err) {
+          console.error('Error loading carousel:', err);
+          track.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; width:100%; color:#ff6b6b;">Gagal memuat data</div>';
+        }
+      }
+
+      function initCarousel() {
+        const track = document.getElementById('menuCarouselTrack');
+        const slides = track.children;
+        if(slides.length === 0) return;
+        
+        let currentIndex = 0;
+        const totalSlides = slides.length;
+
+        function updateSlide() {
+          track.style.transform = `translateX(-${currentIndex * 100}%)`;
+        }
+
+        document.getElementById('nextBtn').onclick = () => { currentIndex = (currentIndex + 1) % totalSlides; updateSlide(); };
+        document.getElementById('prevBtn').onclick = () => { currentIndex = (currentIndex - 1 + totalSlides) % totalSlides; updateSlide(); };
+
+        setInterval(() => { currentIndex = (currentIndex + 1) % totalSlides; updateSlide(); }, 5000);
+      }
+
+      loadPopularMenuCarousel();
 
       const loginForm = document.querySelector('#loginModal form');
       
