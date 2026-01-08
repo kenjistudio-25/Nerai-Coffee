@@ -519,6 +519,21 @@
     </div>
   </div>
 
+<div style="text-align:center; margin: 2rem 0;">
+  <button id="enableNotifications" style="
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    background: #e6b989;
+    color: #0a0503;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+  ">
+    🔔 Aktifkan Notifikasi Pesanan
+  </button>
+</div>
+
   <div class="fixed-bottom">
     <a href="pesanan.html" class="btn-order" id="btnOrderNow">PESAN SEKARANG</a>
   </div>
@@ -892,10 +907,59 @@
         });
     });
   }
-  
+
+  // === PUSH NOTIFICATION SETUP ===
+const enableBtn = document.getElementById('enableNotifications');
+
+if (enableBtn) {
+  enableBtn.addEventListener('click', async () => {
+    // Cek apakah browser support push
+    if (!('PushManager' in window)) {
+      alert('Browser kamu tidak mendukung push notification 😢');
+      return;
+    }
+
+    // Minta permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('Izin notifikasi ditolak. Kamu bisa aktifkan manual di pengaturan browser.');
+      return;
+    }
+
+    // Ganti dengan Public VAPID Key yang kamu generate tadi
+    const vapidPublicKey = 'BDNCsrGaa_BSyandmEurEgTOUaduGW49BfFrTDMmTT0Y6K9BdN3ct1gR4Y7IykVZnKdxq46xcZ5yx3oU_sJYzkA';
+
+    // Convert ke format yang dibutuhkan
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+    // Subscribe
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedVapidKey
+    });
+
+    // Kirim subscription ke Supabase (nanti kita buat endpointnya)
+    alert('Notifikasi berhasil diaktifkan! 🎉\nSubscription: ' + JSON.stringify(subscription));
+    console.log('Push subscription:', subscription);
+
+    // TODO: Kirim subscription ini ke Supabase supaya disimpan
+  });
+}
+
     });
   </script>
 
 </body>
 </html>
-
