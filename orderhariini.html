@@ -1087,6 +1087,16 @@
             .eq('id_order', selectedId);
           if (delCustError) throw delCustError;
 
+          // Buka WhatsApp ke Customer
+          if (customer && customer.tlp) {
+            let phone = customer.tlp.replace(/[^0-9]/g, ''); // Hapus karakter non-angka
+            if (phone.startsWith('0')) {
+              phone = '62' + phone.slice(1); // Ubah 08xx jadi 628xx
+            }
+            const message = encodeURIComponent("Pesanan anda telah selesai di proses, Silahkan ambil. Terimakasih.");
+            window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+          }
+
           alert('Pesanan berhasil diselesaikan!');
           
           orderDetailsForm.style.display = 'none';
